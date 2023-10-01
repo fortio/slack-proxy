@@ -148,7 +148,6 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 		return err
 	}
 
-	// ToDo: Check if it's actually a retryable error and only retry those. Currently we retry all errors.
 	if !slackResp.Ok {
 		return fmt.Errorf(slackResp.Error)
 	}
