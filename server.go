@@ -11,14 +11,21 @@ import (
 func (app *App) StartServer(ctx context.Context) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
+		// Regardless of the outcome, we always respond as json
 		w.Header().Set("Content-Type", "application/json")
 
+		// "Mock" the response from Slack.
+		// OK is true by default, so we only need to set it to false if we want to trow an error which then could use a custom error message.
+		// From testing, any application only checks if OK is true. So we can ignore all other fields
 		fakeSlackResponse := SlackResponse{
 			Ok: true,
 		}
 
 		maxQueueSize := int(float64(cap(app.slackQueue)) * 0.9)
 		// Reject requests if the queue is almost full
+		// If the channel is full, the request will block until there is space in the channel.
+		// Ideally we don't reject at 90%, but initialy after some tests I got blocked. So I decided to be a bit more conservative.
+		// ToDo: Fix this behaviour so we can reach 100% channel size without problems.
 		if len(app.slackQueue) >= maxQueueSize {
 			w.WriteHeader(http.StatusServiceUnavailable)
 
@@ -60,17 +67,17 @@ func (app *App) StartServer(ctx context.Context) {
 			return
 		}
 
+		// Add a counter to the wait group, this is important to wait for all the messages to be processed before shutting down the server.
+		app.wg.Add(1)
+		// Send the message to the slackQueue to be processed
+		app.slackQueue <- request
+
 		// Respond, this is not entirely accurate as we have no idea if the message will be processed successfully.
 		// This is the downside of having a queue which could potentially delay responses by a lot.
 		// We do our due diligences on the recieved message and can make a fair assumption we will be able to process it.
 		// Application should utlise this applications metrics and logs to find out if there are any issues.
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseData)
-
-		app.wg.Add(1)
-		// Send the message to the slackQueue to be processed
-		app.slackQueue <- request
-		// Add a counter to the wait group
 
 	})
 

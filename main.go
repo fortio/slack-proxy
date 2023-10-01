@@ -62,6 +62,7 @@ func main() {
 	flag.StringVar(&tokenFlag, "token", "", "Bearer token for the Slack API")
 	flag.Parse()
 
+	// The only required flag is the token at the moment.
 	if tokenFlag == "" {
 		fmt.Println("Missing token")
 		return
@@ -73,19 +74,22 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Server ctx
+	// Server ctx, needed to cancel the server and not every other context
 	serverCtx, serverCancel := context.WithCancel(context.Background())
 	defer serverCancel()
 
 	go app.processQueue(ctx, MaxRetries, InitialBackoffMs, SlackPostMessageURL, tokenFlag, burst)
 	go app.StartServer(serverCtx)
 
+	// Wait for a shutdown signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
-	fmt.Println("Shutdown signal received. Cleaning up...")
+	app.logger.Info("Shutdown signal received. Cleaning up...")
+	app.logger.Info("Shutting down server...")
 	serverCancel()
+	app.logger.Info("Shutting down queue...")
 	app.Shutdown()
 	fmt.Println("Shutdown complete.")
 }
