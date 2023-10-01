@@ -18,6 +18,13 @@ Many applications posting messages to Slack either overlook Slack's rate limits 
 
 By being a 1:1 forwarding proxy, you simply POST to this application instead, and it will get forwarded to Slack.
 
+Furthermore, by adding observability, we can have a much clearer picture of:
+- Requests per second
+- To which channel?
+- Are there failures and at what rate?
+
+These type of insights are currently not possible to know via Slack, and only via different methods if your applications are instrumented that way (which they often aren't)
+
 
 ## ToDo's
 
