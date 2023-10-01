@@ -30,6 +30,7 @@ By being a 1:1 forwarding proxy, you simply POST to this application instead, an
 - Build + Docker image
 - Code check
 - Actually check Slack response and check if this is a retryable error or not
+- How to run multiple replicas with each their own API key?
 
 
 ## Slack Application manifest
