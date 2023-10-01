@@ -35,6 +35,7 @@ These type of insights are currently not possible to know via Slack, and only vi
 - Actually check Slack errors if they are retryable or not
 - How to run multiple replicas with each their own API key?
 - Log user errors (i.e. non-retryable errors)
+- Check if "channel does not exist" error is present, then ignore any message to said channel for a period of time to ease requests towards Slack
 
 ## Done ToDo's
 
