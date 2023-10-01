@@ -11,8 +11,17 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
+
+type Metrics struct {
+	RequestsRecievedTotal  *prometheus.CounterVec
+	RequestsFailedTotal    *prometheus.CounterVec
+	RequestsRetriedTotal   *prometheus.CounterVec
+	RequestsSucceededTotal *prometheus.CounterVec
+	QueueSize              *prometheus.GaugeVec
+}
 
 type SlackResponse struct {
 	Ok    bool   `json:"ok"`
@@ -39,6 +48,7 @@ type App struct {
 	wg         sync.WaitGroup
 	messenger  SlackMessenger
 	logger     *zap.Logger
+	metrics    *Metrics
 }
 
 func main() {
@@ -50,6 +60,7 @@ func main() {
 		maxQueueSize        = 100
 		burst               = 3
 		tokenFlag           string
+		MetricsPort         = ":9090"
 	)
 
 	// Define the flags with the default values
@@ -59,9 +70,19 @@ func main() {
 	flag.IntVar(&maxQueueSize, "queueSize", maxQueueSize, "Maximum number of messages in the queue")
 	flag.IntVar(&burst, "burst", burst, "Maximum number of burst to allow")
 	flag.StringVar(&tokenFlag, "token", "", "Bearer token for the Slack API")
+	flag.StringVar(&MetricsPort, "metricsPort", MetricsPort, "Port for the metrics server")
 	flag.Parse()
 
-	app := NewApp(maxQueueSize, &http.Client{})
+	// Initialize metrics
+	r := prometheus.NewRegistry()
+	metrics := NewMetrics(r)
+
+	// Initialize the app, metrics are passed along so they are accessible
+	app := NewApp(maxQueueSize, &http.Client{}, metrics)
+
+	app.logger.Info("Starting up...")
+	app.logger.Info("Starting metrics server.")
+	go StartMetricServer(r, &MetricsPort)
 
 	// The only required flag is the token at the moment.
 	if tokenFlag == "" {
@@ -76,8 +97,12 @@ func main() {
 	serverCtx, serverCancel := context.WithCancel(context.Background())
 	defer serverCancel()
 
+	app.logger.Info("Starting main app logic")
 	go app.processQueue(ctx, MaxRetries, InitialBackoffMs, SlackPostMessageURL, tokenFlag, burst)
+	app.logger.Info("Starting reciever server")
 	go app.StartServer(serverCtx)
+
+	app.logger.Info("Up and running!")
 
 	// Wait for a shutdown signal
 	sigChan := make(chan os.Signal, 1)

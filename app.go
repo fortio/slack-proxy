@@ -63,7 +63,7 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	return nil
 }
 
-func NewApp(queueSize int, httpClient *http.Client) *App {
+func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics) *App {
 
 	logger, err := zap.NewProduction()
 	if err != nil {
@@ -74,6 +74,7 @@ func NewApp(queueSize int, httpClient *http.Client) *App {
 		slackQueue: make(chan SlackPostMessageRequest, queueSize),
 		messenger:  &SlackClient{client: httpClient},
 		logger:     logger,
+		metrics:    metrics,
 	}
 }
 
@@ -109,22 +110,28 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 				err := app.messenger.PostMessage(msg, SlackPostMessageURL, tokenFlag)
 				if err != nil {
 					app.logger.Error("Failed to post message", zap.Error(err))
+					app.metrics.RequestsRetriedTotal.WithLabelValues(msg.Channel).Inc()
+
 					if retryCount < MaxRetries {
 						retryCount++
 						backoffDuration := time.Duration(InitialBackoffMs*int(math.Pow(2, float64(retryCount-1)))) * time.Millisecond
 						time.Sleep(backoffDuration)
 					} else {
 						app.logger.Error("Message failed after retries", zap.Error(err), zap.Int("retryCount", retryCount))
+						app.metrics.RequestsFailedTotal.WithLabelValues(msg.Channel).Inc()
 						break
 					}
 				} else {
 					app.logger.Debug("Message sent successfully")
+					app.metrics.RequestsSucceededTotal.WithLabelValues(msg.Channel).Inc()
 					break
 				}
 			}
 
 			// Need to call this to clean up the wg, which is vital for the shutdown to work (so that we process all the messages in the queue before exiting cleanly)
 			app.wg.Done()
+			// Update the queue size metric after any change on the queue size
+			app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
 
 		case <-ctx.Done():
 			return
