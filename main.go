@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -62,13 +61,12 @@ func main() {
 	flag.StringVar(&tokenFlag, "token", "", "Bearer token for the Slack API")
 	flag.Parse()
 
+	app := NewApp(maxQueueSize, &http.Client{})
+
 	// The only required flag is the token at the moment.
 	if tokenFlag == "" {
-		fmt.Println("Missing token")
-		return
+		app.logger.Fatal("Missing token flag")
 	}
-
-	app := NewApp(maxQueueSize, &http.Client{})
 
 	// Main ctx
 	ctx, cancel := context.WithCancel(context.Background())
@@ -91,5 +89,5 @@ func main() {
 	serverCancel()
 	app.logger.Info("Shutting down queue...")
 	app.Shutdown()
-	fmt.Println("Shutdown complete.")
+	app.logger.Info("Shutdown complete.")
 }
