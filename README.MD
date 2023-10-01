@@ -29,6 +29,7 @@ By being a 1:1 forwarding proxy, you simply POST to this application instead, an
 - Implement our own bearer token auth method. This way the application can run protected (at the moment anyone can POST against this application and it will send the message to Slack)
 - Build + Docker image
 - Code check
+- Actually check Slack response and check if this is a retryable error or not
 
 
 ## Slack Application manifest
