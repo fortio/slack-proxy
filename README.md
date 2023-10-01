@@ -25,6 +25,11 @@ Furthermore, by adding observability, we can have a much clearer picture of:
 
 These type of insights are currently not possible to know via Slack, and only via different methods if your applications are instrumented that way (which they often aren't)
 
+## Usage
+
+We don't try to 'mock' the Slack API. We make a fair assumption that the message you post to the proxy **is already tested** and meets the API spec. In other words, if you got a new (custom) application where you are testing the API, I would highly recommend you do that to Slack directly. Once you have 'battletested' your implementation, you then simply convert the URL to this proxy and gain out of the box retries and rate limit behaviour with included metrics.
+
+
 ## Features
 
 ### SlackProxy Metrics
@@ -80,6 +85,7 @@ Permanent errors are logged in detail, including the complete POST request. Conc
 - Build + Docker image
 - Code check
 - How to run multiple replicas with each their own API key?
+- Add some basic sanity check if the basics are part of the request (channel, some body, etc)
 
 
 ## Slack Application manifest
