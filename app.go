@@ -102,9 +102,9 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 				return
 			}
 			app.logger.Debug("Got message from queue")
+			// Update the queue size metric after any change on the queue size
+			app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
 
-			// Removed this in favour of moving it at the end of the 'loop' myself. This is because after testing, I noticed a massive delay and randomness of when the .Done() was called
-			// defer app.wg.Done()
 			retryCount := 0
 			for {
 				err := app.messenger.PostMessage(msg, SlackPostMessageURL, tokenFlag)
@@ -130,8 +130,6 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 
 			// Need to call this to clean up the wg, which is vital for the shutdown to work (so that we process all the messages in the queue before exiting cleanly)
 			app.wg.Done()
-			// Update the queue size metric after any change on the queue size
-			app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
 
 		case <-ctx.Done():
 			return

@@ -71,10 +71,10 @@ func (app *App) StartServer(ctx context.Context, applicationPort *string) {
 
 		// Add a counter to the wait group, this is important to wait for all the messages to be processed before shutting down the server.
 		app.wg.Add(1)
-		// Update the queue size metric after any change on the queue size
-		app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
 		// Send the message to the slackQueue to be processed
 		app.slackQueue <- request
+		// Update the queue size metric after any change on the queue size
+		app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
 
 		// Respond, this is not entirely accurate as we have no idea if the message will be processed successfully.
 		// This is the downside of having a queue which could potentially delay responses by a lot.
