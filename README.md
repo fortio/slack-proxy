@@ -25,6 +25,53 @@ Furthermore, by adding observability, we can have a much clearer picture of:
 
 These type of insights are currently not possible to know via Slack, and only via different methods if your applications are instrumented that way (which they often aren't)
 
+## Features
+
+### SlackProxy Metrics
+
+The `slackproxy` service provides several metrics to monitor and gauge the performance of the proxy, especially regarding how it handles requests. The metrics are exposed using the Prometheus client library.
+
+1. **Requests Received Total**
+   - Metric: `slackproxy_requests_recieved_total`
+   - Description: The total number of requests received by the proxy.
+   - Labels: `channel`
+
+2. **Requests Failed Total**
+   - Metric: `slackproxy_requests_failed_total`
+   - Description: The total number of requests that failed.
+   - Labels: `channel`
+
+3. **Requests Retried Total**
+   - Metric: `slackproxy_requests_retried_total`
+   - Description: The total number of requests retried by the proxy.
+   - Labels: `channel`
+
+4. **Requests Succeeded Total**
+   - Metric: `slackproxy_requests_succeeded_total`
+   - Description: The total number of requests that succeeded.
+   - Labels: `channel`
+
+5. **Requests Not Processed**
+   - Metric: `slackproxy_requests_not_processed_total`
+   - Description: The total number of requests not processed by the proxy.
+   - Labels: `channel`
+
+6. **Queue Size**
+   - Metric: `slackproxy_queue_size`
+   - Description: The current size of the proxy's queue.
+
+
+### Queue
+
+Monitor the queue size with the `slackproxy_queue_size` metric. This isn't a persistent queue. If the application crashes abruptly, the queue is lost. However, during a clean application shutdown, the queue processes, given adequate time. If, for instance, there's a prolonged Slack outage or if you face an outage, the queue might be lost. While the queue size is configurable, remember that the processing rate is a maximum of 1 message per second. If the queue consistently reaches its limit, consider horizontal scaling.
+
+### Non-processable Requests
+
+When the error `channel_not_found` appears, rather than retrying, ANY request to post to the said channel is placed on a 'DoNotProcess' list for 15 minutes. This minimizes unnecessary Slack calls. Monitor this behavior with the `slackproxy_requests_not_processed_total` metric.
+
+### Permanent Errors
+
+Permanent errors are logged in detail, including the complete POST request. Concurrently, the `slackproxy_requests_failed_total` metric is incremented.
 
 ## ToDo's
 
@@ -32,17 +79,7 @@ These type of insights are currently not possible to know via Slack, and only vi
 - Implement our own bearer token auth method. This way the application can run protected (at the moment anyone can POST against this application and it will send the message to Slack) - open for other suggestions..
 - Build + Docker image
 - Code check
-- Actually check Slack errors if they are retryable or not
 - How to run multiple replicas with each their own API key?
-- Log user errors (i.e. non-retryable errors)
-- Check if "channel does not exist" error is present, then ignore any message to said channel for a period of time to ease requests towards Slack
-
-## Done ToDo's
-
-- Implement observability, we want to have statistics for:
-    - Requests/s per channel
-    - Failed requests due to user error
-    - Queue size
 
 
 ## Slack Application manifest

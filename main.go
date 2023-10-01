@@ -20,6 +20,7 @@ type Metrics struct {
 	RequestsFailedTotal    *prometheus.CounterVec
 	RequestsRetriedTotal   *prometheus.CounterVec
 	RequestsSucceededTotal *prometheus.CounterVec
+	RequestsNotProcessed   *prometheus.CounterVec
 	QueueSize              *prometheus.GaugeVec
 }
 
