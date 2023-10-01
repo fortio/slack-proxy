@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (app *App) StartServer(ctx context.Context) {
+func (app *App) StartServer(ctx context.Context, applicationPort *string) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
 		// Regardless of the outcome, we always respond as json
@@ -85,7 +85,7 @@ func (app *App) StartServer(ctx context.Context) {
 
 	})
 
-	server := &http.Server{Addr: ":8080"}
+	server := &http.Server{Addr: *applicationPort}
 
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {

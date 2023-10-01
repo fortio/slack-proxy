@@ -97,3 +97,10 @@ settings:
    - Default: *`3`*
    - Example: `--burst=2`
 
+- `--metricsPort` : Port used for the `/metrics` endpoint
+    - Default: *`:9090`
+    - Example: `--metricsPort :9090`
+
+- `--applicationPort` : Port used for the application endpoint (where you send your requests to)
+    - Default: *`:8080`
+    - Example: `--applicationPort :8080`    

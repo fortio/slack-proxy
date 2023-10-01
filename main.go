@@ -61,6 +61,7 @@ func main() {
 		burst               = 3
 		tokenFlag           string
 		MetricsPort         = ":9090"
+		ApplicationPort     = ":8080"
 	)
 
 	// Define the flags with the default values
@@ -71,6 +72,7 @@ func main() {
 	flag.IntVar(&burst, "burst", burst, "Maximum number of burst to allow")
 	flag.StringVar(&tokenFlag, "token", "", "Bearer token for the Slack API")
 	flag.StringVar(&MetricsPort, "metricsPort", MetricsPort, "Port for the metrics server")
+	flag.StringVar(&ApplicationPort, "applicationPort", ApplicationPort, "Port for the application server")
 	flag.Parse()
 
 	// Initialize metrics
@@ -79,15 +81,14 @@ func main() {
 
 	// Initialize the app, metrics are passed along so they are accessible
 	app := NewApp(maxQueueSize, &http.Client{}, metrics)
-
-	app.logger.Info("Starting up...")
-	app.logger.Info("Starting metrics server.")
-	go StartMetricServer(r, &MetricsPort)
-
 	// The only required flag is the token at the moment.
 	if tokenFlag == "" {
 		app.logger.Fatal("Missing token flag")
 	}
+
+	app.logger.Info("Starting up...")
+	app.logger.Info("Starting metrics server.")
+	go StartMetricServer(r, &MetricsPort)
 
 	// Main ctx
 	ctx, cancel := context.WithCancel(context.Background())
@@ -100,7 +101,7 @@ func main() {
 	app.logger.Info("Starting main app logic")
 	go app.processQueue(ctx, MaxRetries, InitialBackoffMs, SlackPostMessageURL, tokenFlag, burst)
 	app.logger.Info("Starting reciever server")
-	go app.StartServer(serverCtx)
+	go app.StartServer(serverCtx, &ApplicationPort)
 
 	app.logger.Info("Up and running!")
 
