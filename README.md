@@ -21,16 +21,20 @@ By being a 1:1 forwarding proxy, you simply POST to this application instead, an
 
 ## ToDo's
 
-- Currently, we do not use the original header bearer token. It is required you setup this application with a slack webhook.
-- Implement observability, we want to have statistics for:
-    - Requests/s per channel
-    - Failed requests due to user error (and log those, so users can fix their POST requests)
-    - Queue size
-- Implement our own bearer token auth method. This way the application can run protected (at the moment anyone can POST against this application and it will send the message to Slack)
+- Currently, we do not use the original header bearer token. It is required you setup this application with a slack webhook. I personally think that's fine/good. Open for suggestions..
+- Implement our own bearer token auth method. This way the application can run protected (at the moment anyone can POST against this application and it will send the message to Slack) - open for other suggestions..
 - Build + Docker image
 - Code check
-- Actually check Slack response and check if this is a retryable error or not
+- Actually check Slack errors if they are retryable or not
 - How to run multiple replicas with each their own API key?
+- Log user errors (i.e. non-retryable errors)
+
+## Done ToDo's
+
+- Implement observability, we want to have statistics for:
+    - Requests/s per channel
+    - Failed requests due to user error
+    - Queue size
 
 
 ## Slack Application manifest
