@@ -46,14 +46,14 @@ func TestApp_singleBurst_Success(t *testing.T) {
 		}
 	}
 
-	log.S(log.Debug,"Posting messages done")
+	log.S(log.Debug, "Posting messages done")
 
 	app.wg.Wait()
 
 	endTime := time.Now()
 
 	diffInSeconds := endTime.Sub(startTime).Seconds()
-	log.S(log.Debug,"diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
+	log.S(log.Debug, "diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
 
 	// The sum is always: (Amount of messages * delay in seconds) minus burst. In this case 10 * 1 - 1 = 9 seconds.
 	if math.RoundToEven(diffInSeconds) != 9 {
@@ -84,14 +84,14 @@ func TestApp_MultiBurst_Success(t *testing.T) {
 		}
 	}
 
-	log.S(log.Debug,"Posting messages done")
+	log.S(log.Debug, "Posting messages done")
 
 	app.wg.Wait()
 
 	endTime := time.Now()
 
 	diffInSeconds := endTime.Sub(startTime).Seconds()
-	log.S(log.Debug,"diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
+	log.S(log.Debug, "diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
 
 	// The sum is always: (Amount of messages * delay in seconds) minus burst. In this case 20 * 1 - 10 = 10 seconds.
 	if math.RoundToEven(diffInSeconds) != 10 {

@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
 	"net/http"
 	"time"
@@ -138,13 +137,9 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	var slackResp SlackResponse
-	if err = json.Unmarshal(body, &slackResp); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&slackResp)
+	if err != nil {
 		return err
 	}
 
@@ -177,8 +172,6 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 	r := rate.NewLimiter(rate.Every(1*time.Second), burst)
 
 	for {
-		r.Wait(ctx)
-
 		select {
 		case msg, ok := <-app.slackQueue:
 			// We do check if the channel is closed, but its important to note is that the channel will be closed when the queue is empty and the Shutdown() is called.
@@ -188,6 +181,14 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 				return
 			}
 			log.S(log.Debug, "Got message from queue", log.Any("message", msg))
+
+			// Rate limiter was initially before fetching a message from the queue, but that caused problems by indefinitely looping even if there was no message in the queue.
+			// On shutdown, it would cancel the context, even if the queue was stopped (thus no messages would even come in).
+			err := r.Wait(ctx)
+			if err != nil {
+				log.Fatalf("Error while waiting for rate limiter. This should not happen, provide debug info + error message to an issue if it does: %w", err)
+				return
+			}
 
 			// Update the queue size metric after any change on the queue size
 			app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
