@@ -6,12 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"time"
 
-	"go.uber.org/zap"
+	"fortio.org/log"
 	"golang.org/x/time/rate"
 )
 
@@ -138,7 +138,7 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -157,15 +157,9 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 
 func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics) *App {
 
-	logger, err := zap.NewProduction()
-	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
-	}
-
 	return &App{
 		slackQueue: make(chan SlackPostMessageRequest, queueSize),
 		messenger:  &SlackClient{client: httpClient},
-		logger:     logger,
 		metrics:    metrics,
 	}
 }
@@ -193,7 +187,7 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 			if !ok {
 				return
 			}
-			app.logger.Debug("Got message from queue", zap.Any("message", msg))
+			log.S(log.Debug, "Got message from queue", log.Any("message", msg))
 
 			// Update the queue size metric after any change on the queue size
 			app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
@@ -207,7 +201,7 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 						// Remove the channel from the map, so that we can process it again. If the channel isn't created in the meantime, we will just add it again.
 						delete(doNotProcessChannels, msg.Channel)
 					} else {
-						app.logger.Info("Channel is on the doNotProcess list, not trying to post this message", zap.String("channel", msg.Channel))
+						log.S(log.Info, "Channel is on the doNotProcess list, not trying to post this message", log.String("channel", msg.Channel))
 						app.metrics.RequestsNotProcessed.WithLabelValues(msg.Channel).Inc()
 						break
 					}
@@ -219,21 +213,21 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 					retryable, pause, description := CheckError(err.Error(), msg.Channel)
 
 					if pause {
-						app.logger.Info("Channel not found, pausing for 15 minutes", zap.String("channel", msg.Channel))
+						log.S(log.Info, "Channel not found, pausing for 15 minutes", log.String("channel", msg.Channel))
 						app.metrics.RequestsNotProcessed.WithLabelValues(msg.Channel).Inc()
 						break
 					}
 
 					if !retryable {
 						app.metrics.RequestsFailedTotal.WithLabelValues(msg.Channel).Inc()
-						app.logger.Error("Permanent error, message will not be retried", zap.Error(err), zap.String("description", description), zap.String("channel", msg.Channel), zap.Any("message", msg))
+						log.S(log.Error, "Permanent error, message will not be retried", log.Any("err", err), log.String("description", description), log.String("channel", msg.Channel), log.Any("message", msg))
 						break
 					}
 
 					if description == "Unknown error" {
-						app.logger.Error("Unknown error, since we can't infer what type of error it is, we will retry it. However, please create a ticket/issue for this project for this error", zap.Error(err))
+						log.S(log.Error, "Unknown error, since we can't infer what type of error it is, we will retry it. However, please create a ticket/issue for this project for this error", log.Any("err", err))
 					}
-					app.logger.Warn("Temporary error, message will be retried", zap.Error(err), zap.String("description", description), zap.String("channel", msg.Channel), zap.Any("message", msg))
+					log.S(log.Warning, "Temporary error, message will be retried", log.Any("err", err), log.String("description", description), log.String("channel", msg.Channel), log.Any("message", msg))
 
 					app.metrics.RequestsRetriedTotal.WithLabelValues(msg.Channel).Inc()
 
@@ -242,12 +236,12 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 						backoffDuration := time.Duration(InitialBackoffMs*int(math.Pow(2, float64(retryCount-1)))) * time.Millisecond
 						time.Sleep(backoffDuration)
 					} else {
-						app.logger.Error("Message failed after retries", zap.Error(err), zap.Int("retryCount", retryCount))
+						log.S(log.Error, "Message failed after retries", log.Any("err", err), log.Int("retryCount", retryCount))
 						app.metrics.RequestsFailedTotal.WithLabelValues(msg.Channel).Inc()
 						break
 					}
 				} else {
-					app.logger.Debug("Message sent successfully")
+					log.Debugf("Message sent successfully")
 					app.metrics.RequestsSucceededTotal.WithLabelValues(msg.Channel).Inc()
 					break
 				}

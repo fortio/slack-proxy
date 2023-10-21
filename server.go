@@ -61,7 +61,7 @@ func (app *App) StartServer(ctx context.Context, applicationPort *string) {
 			return
 		}
 
-		app.metrics.RequestsRecievedTotal.WithLabelValues(request.Channel).Inc()
+		app.metrics.RequestsReceivedTotal.WithLabelValues(request.Channel).Inc()
 
 		responseData, err := json.Marshal(fakeSlackResponse)
 		if err != nil {

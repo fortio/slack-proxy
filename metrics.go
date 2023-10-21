@@ -11,7 +11,7 @@ import (
 func NewMetrics(reg prometheus.Registerer) *Metrics {
 
 	m := &Metrics{
-		RequestsRecievedTotal: prometheus.NewCounterVec(
+		RequestsReceivedTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: "slackproxy",
 				Name:      "requests_recieved_total",
@@ -61,7 +61,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		),
 	}
 
-	reg.MustRegister(m.RequestsRecievedTotal)
+	reg.MustRegister(m.RequestsReceivedTotal)
 	reg.MustRegister(m.RequestsFailedTotal)
 	reg.MustRegister(m.RequestsRetriedTotal)
 	reg.MustRegister(m.RequestsSucceededTotal)

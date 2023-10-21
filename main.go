@@ -6,17 +6,15 @@ import (
 	"encoding/json"
 	"flag"
 	"net/http"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
+	"fortio.org/log"
+	"fortio.org/scli"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 )
 
 type Metrics struct {
-	RequestsRecievedTotal  *prometheus.CounterVec
+	RequestsReceivedTotal  *prometheus.CounterVec
 	RequestsFailedTotal    *prometheus.CounterVec
 	RequestsRetriedTotal   *prometheus.CounterVec
 	RequestsSucceededTotal *prometheus.CounterVec
@@ -48,7 +46,6 @@ type App struct {
 	slackQueue chan SlackPostMessageRequest
 	wg         sync.WaitGroup
 	messenger  SlackMessenger
-	logger     *zap.Logger
 	metrics    *Metrics
 }
 
@@ -74,7 +71,8 @@ func main() {
 	flag.StringVar(&tokenFlag, "token", "", "Bearer token for the Slack API")
 	flag.StringVar(&MetricsPort, "metricsPort", MetricsPort, "Port for the metrics server")
 	flag.StringVar(&ApplicationPort, "applicationPort", ApplicationPort, "Port for the application server")
-	flag.Parse()
+
+	scli.ServerMain()
 
 	// Initialize metrics
 	r := prometheus.NewRegistry()
@@ -84,11 +82,10 @@ func main() {
 	app := NewApp(maxQueueSize, &http.Client{}, metrics)
 	// The only required flag is the token at the moment.
 	if tokenFlag == "" {
-		app.logger.Fatal("Missing token flag")
+		log.Fatalf("Missing token flag")
 	}
 
-	app.logger.Info("Starting up...")
-	app.logger.Info("Starting metrics server.")
+	log.Infof("Starting metrics server.")
 	go StartMetricServer(r, &MetricsPort)
 
 	// Main ctx
@@ -99,22 +96,18 @@ func main() {
 	serverCtx, serverCancel := context.WithCancel(context.Background())
 	defer serverCancel()
 
-	app.logger.Info("Starting main app logic")
+	log.Infof("Starting main app logic")
 	go app.processQueue(ctx, MaxRetries, InitialBackoffMs, SlackPostMessageURL, tokenFlag, burst)
-	app.logger.Info("Starting reciever server")
+	log.Infof("Starting receiver server")
 	go app.StartServer(serverCtx, &ApplicationPort)
 
-	app.logger.Info("Up and running!")
+	log.Infof("Up and running!")
 
-	// Wait for a shutdown signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
-
-	app.logger.Info("Shutdown signal received. Cleaning up...")
-	app.logger.Info("Shutting down server...")
+	// Shutdown is handled by scli
+	scli.UntilInterrupted()
+	log.Infof("Shutting down server...")
 	serverCancel()
-	app.logger.Info("Shutting down queue...")
+	log.Infof("Shutting down queue...")
 	app.Shutdown()
-	app.logger.Info("Shutdown complete.")
+	log.Infof("Shutdown complete.")
 }

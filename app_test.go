@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
+	"fortio.org/log"
 )
 
 type MockSlackMessenger struct {
@@ -25,16 +25,10 @@ func (m *MockSlackMessenger) PostMessage(req SlackPostMessageRequest, url string
 
 func TestApp_singleBurst_Success(t *testing.T) {
 
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
-	}
-
 	messenger := &MockSlackMessenger{}
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
 		messenger:  messenger,
-		logger:     logger,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -52,14 +46,14 @@ func TestApp_singleBurst_Success(t *testing.T) {
 		}
 	}
 
-	app.logger.Debug("Posting messages done")
+	log.S(log.Debug,"Posting messages done")
 
 	app.wg.Wait()
 
 	endTime := time.Now()
 
 	diffInSeconds := endTime.Sub(startTime).Seconds()
-	app.logger.Debug("diffInSeconds", zap.Float64("diffInSeconds", diffInSeconds))
+	log.S(log.Debug,"diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
 
 	// The sum is always: (Amount of messages * delay in seconds) minus burst. In this case 10 * 1 - 1 = 9 seconds.
 	if math.RoundToEven(diffInSeconds) != 9 {
@@ -69,16 +63,10 @@ func TestApp_singleBurst_Success(t *testing.T) {
 
 func TestApp_MultiBurst_Success(t *testing.T) {
 
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
-	}
-
 	messenger := &MockSlackMessenger{}
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
 		messenger:  messenger,
-		logger:     logger,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -96,14 +84,14 @@ func TestApp_MultiBurst_Success(t *testing.T) {
 		}
 	}
 
-	app.logger.Debug("Posting messages done")
+	log.S(log.Debug,"Posting messages done")
 
 	app.wg.Wait()
 
 	endTime := time.Now()
 
 	diffInSeconds := endTime.Sub(startTime).Seconds()
-	app.logger.Debug("diffInSeconds", zap.Float64("diffInSeconds", diffInSeconds))
+	log.S(log.Debug,"diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
 
 	// The sum is always: (Amount of messages * delay in seconds) minus burst. In this case 20 * 1 - 10 = 10 seconds.
 	if math.RoundToEven(diffInSeconds) != 10 {
