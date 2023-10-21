@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
 
@@ -29,12 +30,15 @@ func TestApp_singleBurst_Success(t *testing.T) {
 	if err != nil {
 		panic("failed to initialize logger: " + err.Error())
 	}
+	r := prometheus.NewRegistry()
+	metrics := NewMetrics(r)
 
 	messenger := &MockSlackMessenger{}
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
 		messenger:  messenger,
 		logger:     logger,
+		metrics:    metrics,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -74,11 +78,15 @@ func TestApp_MultiBurst_Success(t *testing.T) {
 		panic("failed to initialize logger: " + err.Error())
 	}
 
+	r := prometheus.NewRegistry()
+	metrics := NewMetrics(r)
+
 	messenger := &MockSlackMessenger{}
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
 		messenger:  messenger,
 		logger:     logger,
+		metrics:    metrics,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
