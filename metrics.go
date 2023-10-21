@@ -9,13 +9,12 @@ import (
 )
 
 func NewMetrics(reg prometheus.Registerer) *Metrics {
-
 	m := &Metrics{
 		RequestsReceivedTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: "slackproxy",
-				Name:      "requests_recieved_total",
-				Help:      "The total number of requests recieved",
+				Name:      "requests_received_total",
+				Help:      "The total number of requests received",
 			},
 			[]string{"channel"},
 		),
@@ -69,11 +68,9 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 	reg.MustRegister(m.QueueSize)
 
 	return m
-
 }
 
 func StartMetricServer(reg *prometheus.Registry, addr *string) {
-
 	http.Handle("/metrics", promhttp.HandlerFor(
 		reg,
 		promhttp.HandlerOpts{

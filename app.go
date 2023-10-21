@@ -91,7 +91,6 @@ var slackRetryErrors = map[string]string{
 var doNotProcessChannels = map[string]time.Time{}
 
 func CheckError(err string, channel string) (retryable bool, pause bool, description string) {
-
 	// Special case for channel_not_found, we don't want to retry this one right away.
 	// We are making it a 'soft failure' so that we don't keep retrying it for a period of time for any message that is sent to a channel that doesn't exist.
 	// We keep track of said channel in a map, and we will retry it after a period of time.
@@ -112,7 +111,6 @@ func CheckError(err string, channel string) (retryable bool, pause bool, descrip
 
 	// This should not happen, but if it does, we just try to retry it
 	return true, false, "Unknown error"
-
 }
 
 func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, token string) error {
@@ -151,7 +149,6 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 }
 
 func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics) *App {
-
 	return &App{
 		slackQueue: make(chan SlackPostMessageRequest, queueSize),
 		messenger:  &SlackClient{client: httpClient},
@@ -186,7 +183,7 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 			// On shutdown, it would cancel the context, even if the queue was stopped (thus no messages would even come in).
 			err := r.Wait(ctx)
 			if err != nil {
-				log.Fatalf("Error while waiting for rate limiter. This should not happen, provide debug info + error message to an issue if it does: %w", err)
+				log.Fatalf("Error while waiting for rate limiter. This should not happen, provide debug info + error message to an issue if it does: %v", err)
 				return
 			}
 
@@ -195,7 +192,6 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 
 			retryCount := 0
 			for {
-
 				// Check if the channel is in the doNotProcessChannels map, if it is, check if it's been more than 15 minutes since we last tried to send a message to it.
 				if (doNotProcessChannels[msg.Channel] != time.Time{}) {
 					if time.Since(doNotProcessChannels[msg.Channel]) >= 15*time.Minute {
@@ -210,7 +206,6 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 
 				err := app.messenger.PostMessage(msg, SlackPostMessageURL, tokenFlag)
 				if err != nil {
-
 					retryable, pause, description := CheckError(err.Error(), msg.Channel)
 
 					if pause {

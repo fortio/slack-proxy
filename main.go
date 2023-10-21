@@ -50,7 +50,6 @@ type App struct {
 }
 
 func main() {
-
 	var (
 		MaxRetries          = 2
 		InitialBackoffMs    = 1000

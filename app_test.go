@@ -24,7 +24,6 @@ func (m *MockSlackMessenger) PostMessage(req SlackPostMessageRequest, url string
 }
 
 func TestApp_singleBurst_Success(t *testing.T) {
-
 	messenger := &MockSlackMessenger{}
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
@@ -62,7 +61,6 @@ func TestApp_singleBurst_Success(t *testing.T) {
 }
 
 func TestApp_MultiBurst_Success(t *testing.T) {
-
 	messenger := &MockSlackMessenger{}
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
