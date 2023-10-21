@@ -33,9 +33,9 @@ type SlackPostMessageRequest struct {
 	Text        string          `json:"text"`
 	AsUser      bool            `json:"as_user,omitempty"`
 	Username    string          `json:"username,omitempty"`
-	IconUrl     string          `json:"icon_url,omitempty"`
+	IconURL     string          `json:"icon_url,omitempty"`
 	IconEmoji   string          `json:"icon_emoji,omitempty"`
-	ThreadTs    string          `json:"thread_ts,omitempty"`
+	ThreadTS    string          `json:"thread_ts,omitempty"`
 	Parse       string          `json:"parse,omitempty"`
 	LinkNames   bool            `json:"link_names,omitempty"`
 	Blocks      json.RawMessage `json:"blocks,omitempty"`      // JSON serialized array of blocks
@@ -61,7 +61,7 @@ func main() {
 		ApplicationPort     = ":8080"
 	)
 
-	// Define the flags with the default values
+	// Define the flags with the default values // TODO: move the ones that can change to dflag
 	flag.IntVar(&MaxRetries, "maxRetries", MaxRetries, "Maximum number of retries for posting a message")
 	flag.IntVar(&InitialBackoffMs, "initialBackoffMs", InitialBackoffMs, "Initial backoff in milliseconds for retries")
 	flag.StringVar(&SlackPostMessageURL, "slackURL", SlackPostMessageURL, "Slack Post Message API URL")
@@ -85,7 +85,7 @@ func main() {
 	}
 
 	log.Infof("Starting metrics server.")
-	go StartMetricServer(r, &MetricsPort)
+	StartMetricServer(r, MetricsPort)
 
 	// Main ctx
 	ctx, cancel := context.WithCancel(context.Background())
@@ -98,7 +98,13 @@ func main() {
 	log.Infof("Starting main app logic")
 	go app.processQueue(ctx, MaxRetries, InitialBackoffMs, SlackPostMessageURL, tokenFlag, burst)
 	log.Infof("Starting receiver server")
-	go app.StartServer(serverCtx, &ApplicationPort)
+	// Check error return of app.StartServer in go routine anon function:
+	go func() {
+		err := app.StartServer(serverCtx, ApplicationPort)
+		if err != nil {
+			log.Fatalf("Error starting server: %v", err)
+		}
+	}()
 
 	log.Infof("Up and running!")
 

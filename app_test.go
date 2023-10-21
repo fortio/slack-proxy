@@ -17,7 +17,7 @@ type MockSlackMessenger struct {
 	shouldError bool
 }
 
-func (m *MockSlackMessenger) PostMessage(req SlackPostMessageRequest, url string, token string) error {
+func (m *MockSlackMessenger) PostMessage(_ SlackPostMessageRequest, _ string, _ string) error {
 	if m.shouldError {
 		return errors.New("mock error")
 	}

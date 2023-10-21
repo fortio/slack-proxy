@@ -1,9 +1,7 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
+	"fortio.org/fortio/fhttp"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -70,8 +68,9 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 	return m
 }
 
-func StartMetricServer(reg *prometheus.Registry, addr *string) {
-	http.Handle("/metrics", promhttp.HandlerFor(
+func StartMetricServer(reg *prometheus.Registry, addr string) {
+	mux, _ := fhttp.HTTPServer("metrics", addr)
+	mux.Handle("/metrics", promhttp.HandlerFor(
 		reg,
 		promhttp.HandlerOpts{
 			// Opt into OpenMetrics to support exemplars.
@@ -80,5 +79,4 @@ func StartMetricServer(reg *prometheus.Registry, addr *string) {
 			Registry: reg,
 		},
 	))
-	log.Fatal(http.ListenAndServe(*addr, nil))
 }

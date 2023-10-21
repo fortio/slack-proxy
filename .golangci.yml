@@ -108,6 +108,8 @@ linters:
     - forcetypeassert
     - ireturn
     - depguard
+  # TODO bis: do put that one back:
+    - lll
   enable-all: true
   disable-all: false
   # Must not use fast: true in newer golangci-lint or it'll just skip a bunch of linter instead of doing caching like before (!)
