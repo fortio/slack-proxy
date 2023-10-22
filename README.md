@@ -159,5 +159,3 @@ settings:
 - `--channelOverride` : Override on sending _all_ messages to this defined channel. This is useful for debugging or if you want to force to use a single channel
     - Default: *``*
     - Example: `--channelOverride #debug-notifications`   
-
-   
