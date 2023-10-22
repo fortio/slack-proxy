@@ -121,9 +121,13 @@ func TestStartServer(t *testing.T) {
 	// Make another request, this should fail since the server should be stopped
 	secondResp, err := http.Post("http://localhost"+testPort, "application/json", bytes.NewBufferString(`{"channel": "test_channel", "text": "Hello"}`))
 	if err == nil {
-		t.Fatal("Expected error making GET request after server shut down, got none")
+		t.Fatal("Expected error making POST request after server shut down, got none")
 	}
-	defer secondResp.Body.Close()
+
+	// to avoid confusion; we _are_ expecting a err, but for the edge-case it doesn't (resp != nil), we should close the body.
+	if secondResp != nil {
+		defer secondResp.Body.Close()
+	}
 
 	select {
 	case err := <-errCh:
