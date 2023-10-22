@@ -211,7 +211,7 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 					retryable, pause, description := CheckError(err.Error(), msg.Channel)
 
 					if pause {
-						log.S(log.Info, "Channel not found, pausing for 15 minutes", log.String("channel", msg.Channel))
+						log.S(log.Warning, "Channel not found, pausing for 15 minutes", log.String("channel", msg.Channel))
 						app.metrics.RequestsNotProcessed.WithLabelValues(msg.Channel).Inc()
 						break
 					}
