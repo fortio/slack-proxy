@@ -44,10 +44,11 @@ type SlackPostMessageRequest struct {
 }
 
 type App struct {
-	slackQueue chan SlackPostMessageRequest
-	wg         sync.WaitGroup
-	messenger  SlackMessenger
-	metrics    *Metrics
+	slackQueue      chan SlackPostMessageRequest
+	wg              sync.WaitGroup
+	messenger       SlackMessenger
+	metrics         *Metrics
+	channelOverride string
 }
 
 func main() {
@@ -60,6 +61,7 @@ func main() {
 		token               string
 		metricsPort         = ":9090"
 		applicationPort     = ":8080"
+		channelOverride     string
 	)
 
 	// Define the flags with the default values // TODO: move the ones that can change to dflag
@@ -71,6 +73,7 @@ func main() {
 	flag.StringVar(&token, "token", "", "Bearer token for the Slack API")
 	flag.StringVar(&metricsPort, "metricsPort", metricsPort, "Port for the metrics server")
 	flag.StringVar(&applicationPort, "applicationPort", applicationPort, "Port for the application server")
+	flag.StringVar(&channelOverride, "channelOverride", "", "Override the channel for all messages - Be careful with this one!")
 
 	scli.ServerMain()
 
@@ -81,7 +84,7 @@ func main() {
 	// Initialize the app, metrics are passed along so they are accessible
 	app := NewApp(maxQueueSize, &http.Client{
 		Timeout: 10 * time.Second,
-	}, metrics)
+	}, metrics, channelOverride)
 	// The only required flag is the token at the moment.
 	if token == "" {
 		log.Fatalf("Missing token flag")

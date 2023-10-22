@@ -148,11 +148,12 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	return nil
 }
 
-func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics) *App {
+func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics, channelOverride string) *App {
 	return &App{
-		slackQueue: make(chan SlackPostMessageRequest, queueSize),
-		messenger:  &SlackClient{client: httpClient},
-		metrics:    metrics,
+		slackQueue:      make(chan SlackPostMessageRequest, queueSize),
+		messenger:       &SlackClient{client: httpClient},
+		metrics:         metrics,
+		channelOverride: channelOverride,
 	}
 }
 
