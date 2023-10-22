@@ -1,25 +1,21 @@
-name: Test Coverage
+name: "Code Coverage"
 
 on:
   push:
     branches: [ main ]
   pull_request:
-    # The branches below must be a subset of the branches above
     branches: [ main ]
 
 jobs:
-  build:
+  coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # pin@v3
-        with:
-          fetch-depth: 2
-      - name: Set up Go
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # pin@v4
-        with:
+    - uses: actions/checkout@master
+    - uses: actions/setup-go@v4
+      with:
           go-version: '1.20'
-          check-latest: true
-      - name: Run coverage
-        run: make coverage
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # pin@v3
+    - name: Run test coverage
+      run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+    - uses: codecov/codecov-action@v3
+      with:
+        files: coverage.out
