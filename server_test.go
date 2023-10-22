@@ -3,10 +3,12 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"fortio.org/assert"
 	"github.com/prometheus/client_golang/prometheus"
@@ -71,5 +73,62 @@ func TestHandleRequest(t *testing.T) {
 				assert.Equal(t, tt.wantBody, response)
 			}
 		})
+	}
+}
+
+func TestStartServer(t *testing.T) {
+	r := prometheus.NewRegistry()
+	metrics := NewMetrics(r)
+	app := &App{
+		slackQueue: make(chan SlackPostMessageRequest, 10),
+		metrics:    metrics,
+	}
+	testPort := ":9090"
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// T.Fatalf, which must be called in the same goroutine as the test (SA2002)
+	// Sue me, I don't know how to fix this nicer than this...
+	errCh := make(chan error)
+	go func() {
+		if err := app.StartServer(ctx, testPort); err != nil && err != http.ErrServerClosed {
+			errCh <- err // Send the error to the channel
+		}
+		close(errCh)
+	}()
+
+	// Give server some time to start
+	// If you are running on a non-priviledged account, and get a popup asking for permission to accept incoming connections, you can increase this time...
+	time.Sleep(1 * time.Second)
+
+	// Make a sample request to ensure server is running
+
+	resp, err := http.Post("http://localhost"+testPort, "application/json", bytes.NewBufferString(`{"channel": "test_channel", "text": "Hello"}`))
+	if err != nil {
+		t.Fatalf("Could not make GET request: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status OK, got: %v", resp.StatusCode)
+	}
+
+	// Cancel the context, which should stop the server
+	cancel()
+
+	// Give server some time to shut down
+	time.Sleep(1 * time.Second)
+
+	// Make another request, this should fail since the server should be stopped
+	_, err = http.Get("http://localhost" + testPort)
+	if err == nil {
+		t.Fatal("Expected error making GET request after server shut down, got none")
+	}
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("Error starting server: %v", err)
+		}
+	default:
+		// No error received from the channel
 	}
 }
