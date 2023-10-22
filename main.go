@@ -7,6 +7,7 @@ import (
 	"flag"
 	"net/http"
 	"sync"
+	"time"
 
 	"fortio.org/log"
 	"fortio.org/scli"
@@ -78,7 +79,9 @@ func main() {
 	metrics := NewMetrics(r)
 
 	// Initialize the app, metrics are passed along so they are accessible
-	app := NewApp(maxQueueSize, &http.Client{}, metrics)
+	app := NewApp(maxQueueSize, &http.Client{
+		Timeout: 10 * time.Second,
+	}, metrics)
 	// The only required flag is the token at the moment.
 	if tokenFlag == "" {
 		log.Fatalf("Missing token flag")

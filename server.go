@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"fortio.org/fortio/fhttp"
+	"fortio.org/fortio/jrpc"
 	"fortio.org/log"
 )
 
@@ -45,14 +46,9 @@ func (app *App) StartServer(ctx context.Context, applicationPort string) error {
 }
 
 func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
-	// Regardless of the outcome, we always respond as json
-	w.Header().Set("Content-Type", "application/json")
-
-	// "Mock" the response from Slack.
-	// OK is true by default, so we only need to set it to false if we want to trow an error which then could use a custom error message.
-	// From testing, any application only checks if OK is true. So we can ignore all other fields
-	fakeSlackResponse := SlackResponse{
-		Ok: true,
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
 	maxQueueSize := int(float64(cap(app.slackQueue)) * 0.9)
@@ -61,17 +57,12 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	// Ideally we don't reject at 90%, but initially after some tests I got blocked. So I decided to be a bit more conservative.
 	// ToDo: Fix this behavior so we can reach 100% channel size without problems.
 	if len(app.slackQueue) >= maxQueueSize {
-		w.WriteHeader(http.StatusServiceUnavailable)
+		log.S(log.Info, "Queue is almost full, returning StatusServiceUnavailable", log.Int("queueSize", len(app.slackQueue)))
 
-		fakeSlackResponse.Ok = false
-		fakeSlackResponse.Error = "Queue is almost full"
-		responseData, err := json.Marshal(fakeSlackResponse)
-		if err != nil {
-			http.Error(w, "Failed to serialize Slack response", http.StatusInternalServerError)
-			return
-		}
-
-		_, err = w.Write(responseData)
+		err := jrpc.Reply[SlackResponse](w, http.StatusServiceUnavailable, &SlackResponse{
+			Ok:    false,
+			Error: "Queue is almost full",
+		})
 		if err != nil {
 			log.S(log.Error, "Failed to write response", log.Any("err", err))
 		}
@@ -79,42 +70,29 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var request SlackPostMessageRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Failed to read the request body", http.StatusInternalServerError)
-		return
+	requestErr := json.NewDecoder(r.Body).Decode(&request)
+
+	// If we can't decode, we don't bother validating. In the end it's the same outcome if either one is invalid.
+	if requestErr == nil {
+		requestErr = validate(request)
 	}
 
-	// Validate the request
-	err = validate(request)
-	if err != nil {
-		log.S(log.Error, "Invalid request", log.Any("err", err))
-		// TODO: jrpc.(Client)ErrorReply ?
-		w.WriteHeader(http.StatusBadRequest)
-		fakeSlackResponse.Ok = false
-		fakeSlackResponse.Error = err.Error()
-		responseData, err2 := json.Marshal(fakeSlackResponse)
-		_, err3 := w.Write(responseData)
-		if err2 != nil || err3 != nil {
-			log.S(log.Error, "Failed to write response", log.Any("err2", err2), log.Any("err3", err3))
+	if requestErr != nil {
+		log.S(log.Error, "Invalid request", log.Any("err", requestErr))
+
+		err := jrpc.Reply[SlackResponse](w, http.StatusBadRequest, &SlackResponse{
+			Ok:    false,
+			Error: requestErr.Error(),
+		})
+		if err != nil {
+			log.S(log.Error, "Failed to write response", log.Any("err", err))
 		}
 		return
 	}
 
+	// Start the logic (as we passed all our checks) to process the request.
 	app.metrics.RequestsReceivedTotal.WithLabelValues(request.Channel).Inc()
-
-	responseData, err := json.Marshal(fakeSlackResponse)
-	if err != nil {
-		http.Error(w, "Failed to serialize Slack response", http.StatusInternalServerError)
-		return
-	}
-
 	// Add a counter to the wait group, this is important to wait for all the messages to be processed before shutting down the server.
 	app.wg.Add(1)
 	// Send the message to the slackQueue to be processed
@@ -126,8 +104,9 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	// This is the downside of having a queue which could potentially delay responses by a lot.
 	// We do our due diligences on the received message and can make a fair assumption we will be able to process it.
 	// Application should utlise this applications metrics and logs to find out if there are any issues.
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(responseData)
+	err := jrpc.Reply[SlackResponse](w, http.StatusOK, &SlackResponse{
+		Ok: true,
+	})
 	if err != nil {
 		log.S(log.Error, "Failed to write response", log.Any("err", err))
 	}
