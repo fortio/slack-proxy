@@ -44,33 +44,36 @@ type SlackPostMessageRequest struct {
 }
 
 type App struct {
-	slackQueue chan SlackPostMessageRequest
-	wg         sync.WaitGroup
-	messenger  SlackMessenger
-	metrics    *Metrics
+	slackQueue      chan SlackPostMessageRequest
+	wg              sync.WaitGroup
+	messenger       SlackMessenger
+	metrics         *Metrics
+	channelOverride string
 }
 
 func main() {
 	var (
-		MaxRetries          = 2
-		InitialBackoffMs    = 1000
-		SlackPostMessageURL = "https://slack.com/api/chat.postMessage"
+		maxRetries          = 2
+		initialBackoffMs    = 1000
+		slackPostMessageURL = "https://slack.com/api/chat.postMessage"
 		maxQueueSize        = 100
 		burst               = 3
-		tokenFlag           string
-		MetricsPort         = ":9090"
-		ApplicationPort     = ":8080"
+		token               string
+		metricsPort         = ":9090"
+		applicationPort     = ":8080"
+		channelOverride     string
 	)
 
 	// Define the flags with the default values // TODO: move the ones that can change to dflag
-	flag.IntVar(&MaxRetries, "maxRetries", MaxRetries, "Maximum number of retries for posting a message")
-	flag.IntVar(&InitialBackoffMs, "initialBackoffMs", InitialBackoffMs, "Initial backoff in milliseconds for retries")
-	flag.StringVar(&SlackPostMessageURL, "slackURL", SlackPostMessageURL, "Slack Post Message API URL")
+	flag.IntVar(&maxRetries, "maxRetries", maxRetries, "Maximum number of retries for posting a message")
+	flag.IntVar(&initialBackoffMs, "initialBackoffMs", initialBackoffMs, "Initial backoff in milliseconds for retries")
+	flag.StringVar(&slackPostMessageURL, "slackURL", slackPostMessageURL, "Slack Post Message API URL")
 	flag.IntVar(&maxQueueSize, "queueSize", maxQueueSize, "Maximum number of messages in the queue")
 	flag.IntVar(&burst, "burst", burst, "Maximum number of burst to allow")
-	flag.StringVar(&tokenFlag, "token", "", "Bearer token for the Slack API")
-	flag.StringVar(&MetricsPort, "metricsPort", MetricsPort, "Port for the metrics server")
-	flag.StringVar(&ApplicationPort, "applicationPort", ApplicationPort, "Port for the application server")
+	flag.StringVar(&token, "token", "", "Bearer token for the Slack API")
+	flag.StringVar(&metricsPort, "metricsPort", metricsPort, "Port for the metrics server")
+	flag.StringVar(&applicationPort, "applicationPort", applicationPort, "Port for the application server")
+	flag.StringVar(&channelOverride, "channelOverride", "", "Override the channel for all messages - Be careful with this one!")
 
 	scli.ServerMain()
 
@@ -81,14 +84,14 @@ func main() {
 	// Initialize the app, metrics are passed along so they are accessible
 	app := NewApp(maxQueueSize, &http.Client{
 		Timeout: 10 * time.Second,
-	}, metrics)
+	}, metrics, channelOverride)
 	// The only required flag is the token at the moment.
-	if tokenFlag == "" {
+	if token == "" {
 		log.Fatalf("Missing token flag")
 	}
 
 	log.Infof("Starting metrics server.")
-	StartMetricServer(r, MetricsPort)
+	StartMetricServer(r, metricsPort)
 
 	// Main ctx
 	ctx, cancel := context.WithCancel(context.Background())
@@ -99,11 +102,11 @@ func main() {
 	defer serverCancel()
 
 	log.Infof("Starting main app logic")
-	go app.processQueue(ctx, MaxRetries, InitialBackoffMs, SlackPostMessageURL, tokenFlag, burst)
+	go app.processQueue(ctx, maxRetries, initialBackoffMs, slackPostMessageURL, token, burst)
 	log.Infof("Starting receiver server")
 	// Check error return of app.StartServer in go routine anon function:
 	go func() {
-		err := app.StartServer(serverCtx, ApplicationPort)
+		err := app.StartServer(serverCtx, applicationPort)
 		if err != nil {
 			log.Fatalf("Error starting server: %v", err)
 		}

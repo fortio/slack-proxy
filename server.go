@@ -93,6 +93,14 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Start the logic (as we passed all our checks) to process the request.
 	app.metrics.RequestsReceivedTotal.WithLabelValues(request.Channel).Inc()
+
+	// If the channelOverride flag is set, we override the channel for all messages.
+	// We still use the original channel for the metrics (see above).
+	if app.channelOverride != "" {
+		log.S(log.Debug, "Overriding channel", log.String("channelOverride", app.channelOverride), log.String("channel", request.Channel))
+		request.Channel = app.channelOverride
+	}
+
 	// Add a counter to the wait group, this is important to wait for all the messages to be processed before shutting down the server.
 	app.wg.Add(1)
 	// Send the message to the slackQueue to be processed

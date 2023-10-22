@@ -155,3 +155,7 @@ settings:
 - `--applicationPort` : Port used for the application endpoint (where you send your requests to)
     - Default: *`:8080`*
     - Example: `--applicationPort :8080`    
+   
+- `--channelOverride` : Override on sending _all_ messages to this defined channel. This is useful for debugging or if you want to force to use a single channel
+    - Default: *``*
+    - Example: `--channelOverride #debug-notifications`   
