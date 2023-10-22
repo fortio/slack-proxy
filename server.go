@@ -63,7 +63,6 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 			Ok:    false,
 			Error: "Queue is almost full",
 		})
-
 		if err != nil {
 			log.S(log.Error, "Failed to write response", log.Any("err", err))
 		}
@@ -86,7 +85,6 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 			Ok:    false,
 			Error: requestErr.Error(),
 		})
-
 		if err != nil {
 			log.S(log.Error, "Failed to write response", log.Any("err", err))
 		}
@@ -109,7 +107,6 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	err := jrpc.Reply[SlackResponse](w, http.StatusOK, &SlackResponse{
 		Ok: true,
 	})
-
 	if err != nil {
 		log.S(log.Error, "Failed to write response", log.Any("err", err))
 	}
