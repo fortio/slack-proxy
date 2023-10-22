@@ -118,8 +118,8 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	if err != nil {
 		return err
 	}
-	// TODO: context for caller:
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodPost, url, bytes.NewBuffer(jsonValue))
+	// Detach from the caller/new context. TODO: have some timeout (or use jrpc package functions which do that already)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return err
 	}
