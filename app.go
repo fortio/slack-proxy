@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"go.uber.org/zap"
+	"fortio.org/log"
 	"golang.org/x/time/rate"
 )
 
@@ -91,7 +91,6 @@ var slackRetryErrors = map[string]string{
 var doNotProcessChannels = map[string]time.Time{}
 
 func CheckError(err string, channel string) (retryable bool, pause bool, description string) {
-
 	// Special case for channel_not_found, we don't want to retry this one right away.
 	// We are making it a 'soft failure' so that we don't keep retrying it for a period of time for any message that is sent to a channel that doesn't exist.
 	// We keep track of said channel in a map, and we will retry it after a period of time.
@@ -112,7 +111,6 @@ func CheckError(err string, channel string) (retryable bool, pause bool, descrip
 
 	// This should not happen, but if it does, we just try to retry it
 	return true, false, "Unknown error"
-
 }
 
 func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, token string) error {
@@ -120,8 +118,8 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	if err != nil {
 		return err
 	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	// Detach from the caller/new context. TODO: have some timeout (or use jrpc package functions which do that already)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return err
 	}
@@ -151,16 +149,9 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 }
 
 func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics) *App {
-
-	logger, err := zap.NewProduction()
-	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
-	}
-
 	return &App{
 		slackQueue: make(chan SlackPostMessageRequest, queueSize),
 		messenger:  &SlackClient{client: httpClient},
-		logger:     logger,
 		metrics:    metrics,
 	}
 }
@@ -171,7 +162,8 @@ func (app *App) Shutdown() {
 	app.wg.Wait()
 }
 
-func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoffMs int, SlackPostMessageURL string, tokenFlag string, burst int) {
+//nolint:gocognit // but could probably use a refactor.
+func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoffMs int, slackPostMessageURL string, tokenFlag string, burst int) {
 	// This is the rate limiter, which will block until it is allowed to continue on r.Wait(ctx).
 	// I kept the rate at 1 per second, as doing more than that will cause Slack to reject the messages anyways. We can burst however.
 	// Do note that this is best effort, in case of failures, we will exponentially backoff and retry, which will cause the rate to be lower than 1 per second due to obvious reasons.
@@ -186,12 +178,13 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 			if !ok {
 				return
 			}
+			log.S(log.Debug, "Got message from queue", log.Any("message", msg))
 
 			// Rate limiter was initially before fetching a message from the queue, but that caused problems by indefinitely looping even if there was no message in the queue.
 			// On shutdown, it would cancel the context, even if the queue was stopped (thus no messages would even come in).
 			err := r.Wait(ctx)
 			if err != nil {
-				app.logger.Fatal("Error while waiting for rate limiter. This should not happen, provide debug info + error message to an issue if it does.", zap.Error(err))
+				log.Fatalf("Error while waiting for rate limiter. This should not happen, provide debug info + error message to an issue if it does: %v", err)
 				return
 			}
 
@@ -200,54 +193,53 @@ func (app *App) processQueue(ctx context.Context, MaxRetries int, InitialBackoff
 
 			retryCount := 0
 			for {
-
 				// Check if the channel is in the doNotProcessChannels map, if it is, check if it's been more than 15 minutes since we last tried to send a message to it.
 				if (doNotProcessChannels[msg.Channel] != time.Time{}) {
 					if time.Since(doNotProcessChannels[msg.Channel]) >= 15*time.Minute {
 						// Remove the channel from the map, so that we can process it again. If the channel isn't created in the meantime, we will just add it again.
 						delete(doNotProcessChannels, msg.Channel)
 					} else {
-						app.logger.Info("Channel is on the doNotProcess list, not trying to post this message", zap.String("channel", msg.Channel))
+						log.S(log.Info, "Channel is on the doNotProcess list, not trying to post this message", log.String("channel", msg.Channel))
 						app.metrics.RequestsNotProcessed.WithLabelValues(msg.Channel).Inc()
 						break
 					}
 				}
 
-				err := app.messenger.PostMessage(msg, SlackPostMessageURL, tokenFlag)
+				err := app.messenger.PostMessage(msg, slackPostMessageURL, tokenFlag)
+				//nolint:nestif // but simplify by not having else at least.
 				if err != nil {
-
 					retryable, pause, description := CheckError(err.Error(), msg.Channel)
 
 					if pause {
-						app.logger.Info("Channel not found, pausing for 15 minutes", zap.String("channel", msg.Channel))
+						log.S(log.Info, "Channel not found, pausing for 15 minutes", log.String("channel", msg.Channel))
 						app.metrics.RequestsNotProcessed.WithLabelValues(msg.Channel).Inc()
 						break
 					}
 
 					if !retryable {
 						app.metrics.RequestsFailedTotal.WithLabelValues(msg.Channel).Inc()
-						app.logger.Error("Permanent error, message will not be retried", zap.Error(err), zap.String("description", description), zap.String("channel", msg.Channel), zap.Any("message", msg))
+						log.S(log.Error, "Permanent error, message will not be retried", log.Any("err", err), log.String("description", description), log.String("channel", msg.Channel), log.Any("message", msg))
 						break
 					}
 
 					if description == "Unknown error" {
-						app.logger.Error("Unknown error, since we can't infer what type of error it is, we will retry it. However, please create a ticket/issue for this project for this error", zap.Error(err))
+						log.S(log.Error, "Unknown error, since we can't infer what type of error it is, we will retry it. However, please create a ticket/issue for this project for this error", log.Any("err", err))
 					}
-					app.logger.Warn("Temporary error, message will be retried", zap.Error(err), zap.String("description", description), zap.String("channel", msg.Channel), zap.Any("message", msg))
+					log.S(log.Warning, "Temporary error, message will be retried", log.Any("err", err), log.String("description", description), log.String("channel", msg.Channel), log.Any("message", msg))
 
 					app.metrics.RequestsRetriedTotal.WithLabelValues(msg.Channel).Inc()
 
-					if retryCount < MaxRetries {
+					if retryCount < maxRetries {
 						retryCount++
-						backoffDuration := time.Duration(InitialBackoffMs*int(math.Pow(2, float64(retryCount-1)))) * time.Millisecond
+						backoffDuration := time.Duration(initialBackoffMs*int(math.Pow(2, float64(retryCount-1)))) * time.Millisecond
 						time.Sleep(backoffDuration)
 					} else {
-						app.logger.Error("Message failed after retries", zap.Error(err), zap.Int("retryCount", retryCount))
+						log.S(log.Error, "Message failed after retries", log.Any("err", err), log.Int("retryCount", retryCount))
 						app.metrics.RequestsFailedTotal.WithLabelValues(msg.Channel).Inc()
 						break
 					}
 				} else {
-					app.logger.Debug("Message sent successfully")
+					log.Debugf("Message sent successfully")
 					app.metrics.RequestsSucceededTotal.WithLabelValues(msg.Channel).Inc()
 					break
 				}

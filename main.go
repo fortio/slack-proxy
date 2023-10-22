@@ -6,17 +6,15 @@ import (
 	"encoding/json"
 	"flag"
 	"net/http"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
+	"fortio.org/log"
+	"fortio.org/scli"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 )
 
 type Metrics struct {
-	RequestsRecievedTotal  *prometheus.CounterVec
+	RequestsReceivedTotal  *prometheus.CounterVec
 	RequestsFailedTotal    *prometheus.CounterVec
 	RequestsRetriedTotal   *prometheus.CounterVec
 	RequestsSucceededTotal *prometheus.CounterVec
@@ -35,9 +33,9 @@ type SlackPostMessageRequest struct {
 	Text        string          `json:"text"`
 	AsUser      bool            `json:"as_user,omitempty"`
 	Username    string          `json:"username,omitempty"`
-	IconUrl     string          `json:"icon_url,omitempty"`
+	IconURL     string          `json:"icon_url,omitempty"`
 	IconEmoji   string          `json:"icon_emoji,omitempty"`
-	ThreadTs    string          `json:"thread_ts,omitempty"`
+	ThreadTS    string          `json:"thread_ts,omitempty"`
 	Parse       string          `json:"parse,omitempty"`
 	LinkNames   bool            `json:"link_names,omitempty"`
 	Blocks      json.RawMessage `json:"blocks,omitempty"`      // JSON serialized array of blocks
@@ -48,12 +46,10 @@ type App struct {
 	slackQueue chan SlackPostMessageRequest
 	wg         sync.WaitGroup
 	messenger  SlackMessenger
-	logger     *zap.Logger
 	metrics    *Metrics
 }
 
 func main() {
-
 	var (
 		MaxRetries          = 2
 		InitialBackoffMs    = 1000
@@ -65,7 +61,7 @@ func main() {
 		ApplicationPort     = ":8080"
 	)
 
-	// Define the flags with the default values
+	// Define the flags with the default values // TODO: move the ones that can change to dflag
 	flag.IntVar(&MaxRetries, "maxRetries", MaxRetries, "Maximum number of retries for posting a message")
 	flag.IntVar(&InitialBackoffMs, "initialBackoffMs", InitialBackoffMs, "Initial backoff in milliseconds for retries")
 	flag.StringVar(&SlackPostMessageURL, "slackURL", SlackPostMessageURL, "Slack Post Message API URL")
@@ -74,7 +70,8 @@ func main() {
 	flag.StringVar(&tokenFlag, "token", "", "Bearer token for the Slack API")
 	flag.StringVar(&MetricsPort, "metricsPort", MetricsPort, "Port for the metrics server")
 	flag.StringVar(&ApplicationPort, "applicationPort", ApplicationPort, "Port for the application server")
-	flag.Parse()
+
+	scli.ServerMain()
 
 	// Initialize metrics
 	r := prometheus.NewRegistry()
@@ -84,12 +81,11 @@ func main() {
 	app := NewApp(maxQueueSize, &http.Client{}, metrics)
 	// The only required flag is the token at the moment.
 	if tokenFlag == "" {
-		app.logger.Fatal("Missing token flag")
+		log.Fatalf("Missing token flag")
 	}
 
-	app.logger.Info("Starting up...")
-	app.logger.Info("Starting metrics server.")
-	go StartMetricServer(r, &MetricsPort)
+	log.Infof("Starting metrics server.")
+	StartMetricServer(r, MetricsPort)
 
 	// Main ctx
 	ctx, cancel := context.WithCancel(context.Background())
@@ -99,22 +95,24 @@ func main() {
 	serverCtx, serverCancel := context.WithCancel(context.Background())
 	defer serverCancel()
 
-	app.logger.Info("Starting main app logic")
+	log.Infof("Starting main app logic")
 	go app.processQueue(ctx, MaxRetries, InitialBackoffMs, SlackPostMessageURL, tokenFlag, burst)
-	app.logger.Info("Starting reciever server")
-	go app.StartServer(serverCtx, &ApplicationPort)
+	log.Infof("Starting receiver server")
+	// Check error return of app.StartServer in go routine anon function:
+	go func() {
+		err := app.StartServer(serverCtx, ApplicationPort)
+		if err != nil {
+			log.Fatalf("Error starting server: %v", err)
+		}
+	}()
 
-	app.logger.Info("Up and running!")
+	log.Infof("Up and running!")
 
-	// Wait for a shutdown signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
-
-	app.logger.Info("Shutdown signal received. Cleaning up...")
-	app.logger.Info("Shutting down server...")
+	// Shutdown is handled by scli
+	scli.UntilInterrupted()
+	log.Infof("Shutting down server...")
 	serverCancel()
-	app.logger.Info("Shutting down queue...")
+	log.Infof("Shutting down queue...")
 	app.Shutdown()
-	app.logger.Info("Shutdown complete.")
+	log.Infof("Shutdown complete.")
 }

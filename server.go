@@ -4,26 +4,33 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"go.uber.org/zap"
+	"fortio.org/fortio/fhttp"
+	"fortio.org/log"
 )
 
-func (app *App) StartServer(ctx context.Context, applicationPort *string) error {
+func (app *App) StartServer(ctx context.Context, applicationPort string) error {
+	// TODO probably switch to fhttp but need to see if I can add a shutdown hook.
+	name := "tbd" // TODO: Add a name field to "App"
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleRequest)
 
 	server := &http.Server{
-		Addr:    *applicationPort,
-		Handler: mux,
+		Addr:              applicationPort,
+		Handler:           mux,
+		ReadHeaderTimeout: fhttp.ServerIdleTimeout.Get(),
+		IdleTimeout:       fhttp.ServerIdleTimeout.Get(),
+		ErrorLog:          log.NewStdLogger("http srv "+name, log.Error),
 	}
 
 	doneCh := make(chan error)
 	go func() {
 		// Start the server
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			doneCh <- err
 		}
 		close(doneCh)
@@ -51,8 +58,8 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	maxQueueSize := int(float64(cap(app.slackQueue)) * 0.9)
 	// Reject requests if the queue is almost full
 	// If the channel is full, the request will block until there is space in the channel.
-	// Ideally we don't reject at 90%, but initialy after some tests I got blocked. So I decided to be a bit more conservative.
-	// ToDo: Fix this behaviour so we can reach 100% channel size without problems.
+	// Ideally we don't reject at 90%, but initially after some tests I got blocked. So I decided to be a bit more conservative.
+	// ToDo: Fix this behavior so we can reach 100% channel size without problems.
 	if len(app.slackQueue) >= maxQueueSize {
 		w.WriteHeader(http.StatusServiceUnavailable)
 
@@ -66,7 +73,7 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 		_, err = w.Write(responseData)
 		if err != nil {
-			app.logger.Error("Failed to write response", zap.Error(err))
+			log.S(log.Error, "Failed to write response", log.Any("err", err))
 		}
 
 		return
@@ -87,19 +94,20 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	// Validate the request
 	err = validate(request)
 	if err != nil {
+		log.S(log.Error, "Invalid request", log.Any("err", err))
+		// TODO: jrpc.(Client)ErrorReply ?
 		w.WriteHeader(http.StatusBadRequest)
 		fakeSlackResponse.Ok = false
 		fakeSlackResponse.Error = err.Error()
-		responseData, err := json.Marshal(fakeSlackResponse)
-		app.logger.Error("Invalid request", zap.Error(err))
-		_, err = w.Write(responseData)
-		if err != nil {
-			app.logger.Error("Failed to write response", zap.Error(err))
+		responseData, err2 := json.Marshal(fakeSlackResponse)
+		_, err3 := w.Write(responseData)
+		if err2 != nil || err3 != nil {
+			log.S(log.Error, "Failed to write response", log.Any("err2", err2), log.Any("err3", err3))
 		}
 		return
 	}
 
-	app.metrics.RequestsRecievedTotal.WithLabelValues(request.Channel).Inc()
+	app.metrics.RequestsReceivedTotal.WithLabelValues(request.Channel).Inc()
 
 	responseData, err := json.Marshal(fakeSlackResponse)
 	if err != nil {
@@ -116,12 +124,12 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	// Respond, this is not entirely accurate as we have no idea if the message will be processed successfully.
 	// This is the downside of having a queue which could potentially delay responses by a lot.
-	// We do our due diligences on the recieved message and can make a fair assumption we will be able to process it.
+	// We do our due diligences on the received message and can make a fair assumption we will be able to process it.
 	// Application should utlise this applications metrics and logs to find out if there are any issues.
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(responseData)
 	if err != nil {
-		app.logger.Error("Failed to write response", zap.Error(err))
+		log.S(log.Error, "Failed to write response", log.Any("err", err))
 	}
 }
 

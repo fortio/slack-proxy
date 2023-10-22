@@ -8,9 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"fortio.org/assert"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestHandleRequest(t *testing.T) {
@@ -45,16 +44,10 @@ func TestHandleRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			logger, err := zap.NewDevelopment()
-			if err != nil {
-				panic("failed to initialize logger: " + err.Error())
-			}
 			r := prometheus.NewRegistry()
 			metrics := NewMetrics(r)
 
 			app := &App{
-				logger:     logger,
 				slackQueue: make(chan SlackPostMessageRequest, 10),
 				metrics:    metrics,
 			}

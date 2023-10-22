@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"fortio.org/log"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 )
 
 type MockSlackMessenger struct {
 	shouldError bool
 }
 
-func (m *MockSlackMessenger) PostMessage(req SlackPostMessageRequest, url string, token string) error {
+func (m *MockSlackMessenger) PostMessage(_ SlackPostMessageRequest, _ string, _ string) error {
 	if m.shouldError {
 		return errors.New("mock error")
 	}
@@ -25,11 +25,6 @@ func (m *MockSlackMessenger) PostMessage(req SlackPostMessageRequest, url string
 }
 
 func TestApp_singleBurst_Success(t *testing.T) {
-
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
-	}
 	r := prometheus.NewRegistry()
 	metrics := NewMetrics(r)
 
@@ -37,7 +32,6 @@ func TestApp_singleBurst_Success(t *testing.T) {
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
 		messenger:  messenger,
-		logger:     logger,
 		metrics:    metrics,
 	}
 
@@ -56,14 +50,14 @@ func TestApp_singleBurst_Success(t *testing.T) {
 		}
 	}
 
-	app.logger.Debug("Posting messages done")
+	log.S(log.Debug, "Posting messages done")
 
 	app.wg.Wait()
 
 	endTime := time.Now()
 
 	diffInSeconds := endTime.Sub(startTime).Seconds()
-	app.logger.Debug("diffInSeconds", zap.Float64("diffInSeconds", diffInSeconds))
+	log.S(log.Debug, "diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
 
 	// The sum is always: (Amount of messages * delay in seconds) minus burst. In this case 10 * 1 - 1 = 9 seconds.
 	if math.RoundToEven(diffInSeconds) != 9 {
@@ -72,12 +66,6 @@ func TestApp_singleBurst_Success(t *testing.T) {
 }
 
 func TestApp_MultiBurst_Success(t *testing.T) {
-
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic("failed to initialize logger: " + err.Error())
-	}
-
 	r := prometheus.NewRegistry()
 	metrics := NewMetrics(r)
 
@@ -85,7 +73,6 @@ func TestApp_MultiBurst_Success(t *testing.T) {
 	app := &App{
 		slackQueue: make(chan SlackPostMessageRequest, 2),
 		messenger:  messenger,
-		logger:     logger,
 		metrics:    metrics,
 	}
 
@@ -104,14 +91,14 @@ func TestApp_MultiBurst_Success(t *testing.T) {
 		}
 	}
 
-	app.logger.Debug("Posting messages done")
+	log.S(log.Debug, "Posting messages done")
 
 	app.wg.Wait()
 
 	endTime := time.Now()
 
 	diffInSeconds := endTime.Sub(startTime).Seconds()
-	app.logger.Debug("diffInSeconds", zap.Float64("diffInSeconds", diffInSeconds))
+	log.S(log.Debug, "diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
 
 	// The sum is always: (Amount of messages * delay in seconds) minus burst. In this case 20 * 1 - 10 = 10 seconds.
 	if math.RoundToEven(diffInSeconds) != 10 {
