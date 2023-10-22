@@ -90,7 +90,8 @@ func TestStartServer(t *testing.T) {
 	// Sue me, I don't know how to fix this nicer than this...
 	errCh := make(chan error)
 	go func() {
-		if err := app.StartServer(ctx, testPort); err != nil && err != http.ErrServerClosed {
+		err := app.StartServer(ctx, testPort)
+		if err != nil {
 			errCh <- err // Send the error to the channel
 		}
 		close(errCh)
@@ -118,10 +119,11 @@ func TestStartServer(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// Make another request, this should fail since the server should be stopped
-	_, err = http.Get("http://localhost" + testPort)
+	secondResp, err := http.Post("http://localhost"+testPort, "application/json", bytes.NewBufferString(`{"channel": "test_channel", "text": "Hello"}`))
 	if err == nil {
 		t.Fatal("Expected error making GET request after server shut down, got none")
 	}
+	defer secondResp.Body.Close()
 
 	select {
 	case err := <-errCh:
