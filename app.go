@@ -95,7 +95,6 @@ func CheckError(err string, channel string) (retryable bool, pause bool, descrip
 	// We are making it a 'soft failure' so that we don't keep retrying it for a period of time for any message that is sent to a channel that doesn't exist.
 	// We keep track of said channel in a map, and we will retry it after a period of time.
 	if err == "channel_not_found" {
-		doNotProcessChannels[channel] = time.Now()
 		return true, true, "Channel not found"
 	}
 
@@ -212,6 +211,7 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 					retryable, pause, description := CheckError(err.Error(), msg.Channel)
 
 					if pause {
+						doNotProcessChannels[msg.Channel] = time.Now()
 						log.S(log.Warning, "Channel not found, pausing for 15 minutes", log.String("channel", msg.Channel))
 						app.metrics.RequestsNotProcessed.WithLabelValues(msg.Channel).Inc()
 						break
