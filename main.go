@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -70,12 +71,16 @@ func main() {
 	flag.StringVar(&slackPostMessageURL, "slackURL", slackPostMessageURL, "Slack Post Message API URL")
 	flag.IntVar(&maxQueueSize, "queueSize", maxQueueSize, "Maximum number of messages in the queue")
 	flag.IntVar(&burst, "burst", burst, "Maximum number of burst to allow")
-	flag.StringVar(&token, "token", "", "Bearer token for the Slack API")
 	flag.StringVar(&metricsPort, "metricsPort", metricsPort, "Port for the metrics server")
 	flag.StringVar(&applicationPort, "applicationPort", applicationPort, "Port for the application server")
 	flag.StringVar(&channelOverride, "channelOverride", "", "Override the channel for all messages - Be careful with this one!")
 
 	scli.ServerMain()
+
+	token = os.Getenv("SLACK_TOKEN")
+	if token == "" {
+		log.Fatalf("SLACK_TOKEN environment variable not set")
+	}
 
 	// Initialize metrics
 	r := prometheus.NewRegistry()
@@ -85,10 +90,6 @@ func main() {
 	app := NewApp(maxQueueSize, &http.Client{
 		Timeout: 10 * time.Second,
 	}, metrics, channelOverride)
-	// The only required flag is the token at the moment.
-	if token == "" {
-		log.Fatalf("Missing token flag")
-	}
 
 	log.Infof("Starting metrics server.")
 	StartMetricServer(r, metricsPort)
