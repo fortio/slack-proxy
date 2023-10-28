@@ -90,12 +90,10 @@ var slackRetryErrors = map[string]string{
 
 var doNotProcessChannels = map[string]time.Time{}
 
-func CheckError(err string, channel string) (retryable bool, pause bool, description string) {
+func CheckError(err string) (retryable bool, pause bool, description string) {
 	// Special case for channel_not_found, we don't want to retry this one right away.
 	// We are making it a 'soft failure' so that we don't keep retrying it for a period of time for any message that is sent to a channel that doesn't exist.
-	// We keep track of said channel in a map, and we will retry it after a period of time.
 	if err == "channel_not_found" {
-		doNotProcessChannels[channel] = time.Now()
 		return true, true, "Channel not found"
 	}
 
@@ -209,9 +207,11 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 				err := app.messenger.PostMessage(msg, slackPostMessageURL, tokenFlag)
 				//nolint:nestif // but simplify by not having else at least.
 				if err != nil {
-					retryable, pause, description := CheckError(err.Error(), msg.Channel)
+					retryable, pause, description := CheckError(err.Error())
 
+					// We keep track of channels that are paused in a map, and we will retry it after a period of time.
 					if pause {
+						doNotProcessChannels[msg.Channel] = time.Now()
 						log.S(log.Warning, "Channel not found, pausing for 15 minutes", log.String("channel", msg.Channel))
 						app.metrics.RequestsNotProcessed.WithLabelValues(msg.Channel).Inc()
 						break
