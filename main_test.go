@@ -34,7 +34,7 @@ func TestGetSlackTokens(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up the environment variable for the test
-			os.Setenv("SLACK_TOKENS", tt.envValue)
+			t.Setenv("SLACK_TOKENS", tt.envValue)
 
 			// Call the function
 			tokens := getSlackTokens()
@@ -86,7 +86,7 @@ func TestPodIndex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up the environment variable for the test
-			os.Setenv("HOSTNAME", tt.envValue)
+			t.Setenv("HOSTNAME", tt.envValue)
 
 			// Call the function
 			index, err := podIndex()
