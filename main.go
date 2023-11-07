@@ -59,12 +59,7 @@ type App struct {
 // The function expects the HOSTNAME to be in the format <name>-<index>.
 // It returns the index as an integer and an error if any occurred during the process.
 // If the HOSTNAME environment variable is not set or if the format is invalid, it returns an error.
-func podIndex() (int, error) {
-	podName := os.Getenv("HOSTNAME")
-	if podName == "" {
-		return 0, fmt.Errorf("HOSTNAME environment variable not set")
-	}
-
+func podIndex(podName string) (int, error) {
 	lastDash := strings.LastIndex(podName, "-")
 	if lastDash == -1 || lastDash == len(podName)-1 {
 		return 0, fmt.Errorf("invalid pod name %s. Expected <name>-<index>", podName)
@@ -122,15 +117,21 @@ func main() {
 
 	// Hack to get the pod index
 	// Todo: Remove this by using the label pod-index: https://github.com/kubernetes/kubernetes/pull/119232
-	index, err := podIndex()
+	podName := os.Getenv("HOSTNAME")
+	if podName == "" {
+		log.Fatalf("HOSTNAME environment variable not set")
+	}
+
+	index, err := podIndex(podName)
 	if err != nil {
 		log.Fatalf("Failed to get pod index: %v", err)
 	}
 
 	// Get the token for the current pod
 	// If the index is out of range, we fail
+	log.S(log.Info, "Pod", log.Any("index", index), log.Any("num-tokens", len(tokens)))
 	if index >= len(tokens) {
-		log.Fatalf("Pod index %d is out of range for the list of tokens", index)
+		log.Fatalf("Pod index %d is out of range for the list of %d tokens", index, len(tokens))
 	}
 	token := tokens[index]
 
