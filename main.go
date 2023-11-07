@@ -80,12 +80,18 @@ func podIndex() (int, error) {
 }
 
 func getSlackTokens() []string {
-	tokens := os.Getenv("SLACK_TOKENS")
-	if tokens == "" {
+	tokensEnv := os.Getenv("SLACK_TOKENS")
+	if tokensEnv == "" {
 		return []string{}
 	}
 
-	return strings.Split(tokens, ",")
+	tokens := strings.Split(tokensEnv, ",")
+
+	for i, token := range tokens {
+		tokens[i] = strings.TrimSpace(token)
+	}
+
+	return tokens
 }
 
 func main() {

@@ -16,7 +16,7 @@ func TestGetSlackTokens(t *testing.T) {
 	}{
 		{
 			name:     "Multiple tokens",
-			envValue: "token1,token2,token3",
+			envValue: "token1,token2, token3",
 			expected: []string{"token1", "token2", "token3"},
 		},
 		{
