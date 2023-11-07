@@ -86,7 +86,6 @@ func getSlackTokens() []string {
 	}
 
 	tokens := strings.Split(tokensEnv, ",")
-
 	for i, token := range tokens {
 		tokens[i] = strings.TrimSpace(token)
 	}
