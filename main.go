@@ -80,7 +80,7 @@ func podIndex() (int, error) {
 	return index, nil
 }
 
-func GetSlackTokens() []string {
+func getSlackTokens() []string {
 	tokens := os.Getenv("SLACK_TOKENS")
 	if tokens == "" {
 		return []string{}
