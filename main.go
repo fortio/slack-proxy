@@ -5,8 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -52,6 +55,39 @@ type App struct {
 	channelOverride string
 }
 
+// podIndex retrieves the index of the current pod based on the HOSTNAME environment variable.
+// The function expects the HOSTNAME to be in the format <name>-<index>.
+// It returns the index as an integer and an error if any occurred during the process.
+// If the HOSTNAME environment variable is not set or if the format is invalid, it returns an error.
+func podIndex(podName string) (int, error) {
+	lastDash := strings.LastIndex(podName, "-")
+	if lastDash == -1 || lastDash == len(podName)-1 {
+		return 0, fmt.Errorf("invalid pod name %s. Expected <name>-<index>", podName)
+	}
+
+	indexStr := podName[lastDash+1:]
+	index, err := strconv.Atoi(indexStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid pod name format. Expected <name>-<index>, got %s", podName)
+	}
+
+	return index, nil
+}
+
+func getSlackTokens() []string {
+	tokensEnv := os.Getenv("SLACK_TOKENS")
+	if tokensEnv == "" {
+		return []string{}
+	}
+
+	tokens := strings.Split(tokensEnv, ",")
+	for i, token := range tokens {
+		tokens[i] = strings.TrimSpace(token)
+	}
+
+	return tokens
+}
+
 func main() {
 	var (
 		maxRetries          = 2
@@ -59,7 +95,6 @@ func main() {
 		slackPostMessageURL = "https://slack.com/api/chat.postMessage"
 		maxQueueSize        = 100
 		burst               = 3
-		token               string
 		metricsPort         = ":9090"
 		applicationPort     = ":8080"
 		channelOverride     string
@@ -77,10 +112,28 @@ func main() {
 
 	scli.ServerMain()
 
-	token = os.Getenv("SLACK_TOKEN")
-	if token == "" {
-		log.Fatalf("SLACK_TOKEN environment variable not set")
+	// Get list of comma separated tokens from environment variable SLACK_TOKENS
+	tokens := getSlackTokens()
+
+	// Hack to get the pod index
+	// Todo: Remove this by using the label pod-index: https://github.com/kubernetes/kubernetes/pull/119232
+	podName := os.Getenv("HOSTNAME")
+	if podName == "" {
+		log.Fatalf("HOSTNAME environment variable not set")
 	}
+
+	index, err := podIndex(podName)
+	if err != nil {
+		log.Fatalf("Failed to get pod index: %v", err)
+	}
+
+	// Get the token for the current pod
+	// If the index is out of range, we fail
+	log.S(log.Info, "Pod", log.Any("index", index), log.Any("num-tokens", len(tokens)))
+	if index >= len(tokens) {
+		log.Fatalf("Pod index %d is out of range for the list of %d tokens", index, len(tokens))
+	}
+	token := tokens[index]
 
 	// Initialize metrics
 	r := prometheus.NewRegistry()
