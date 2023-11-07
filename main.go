@@ -68,13 +68,13 @@ func podIndex() (int, error) {
 
 	lastDash := strings.LastIndex(podName, "-")
 	if lastDash == -1 || lastDash == len(podName)-1 {
-		return 0, errors.New("invalid pod name format. Expected <name>-<index>")
+		return 0, fmt.Errorf("invalid pod name %s. Expected <name>-<index>", podName)
 	}
 
 	indexStr := podName[lastDash+1:]
 	index, err := strconv.Atoi(indexStr)
 	if err != nil {
-		return 0, errors.New(fmt.Sprintf("invalid pod name format. Expected <name>-<index>, got %s", podName))
+		return 0, fmt.Errorf("invalid pod name format. Expected <name>-<index>, got %s", podName)
 	}
 
 	return index, nil
@@ -114,7 +114,7 @@ func main() {
 	scli.ServerMain()
 
 	// Get list of comma separated tokens from environment variable SLACK_TOKENS
-	tokens := GetSlackTokens()
+	tokens := getSlackTokens()
 
 	// Hack to get the pod index
 	// Todo: Remove this by using the label pod-index: https://github.com/kubernetes/kubernetes/pull/119232
