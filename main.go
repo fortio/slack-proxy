@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -63,7 +62,7 @@ type App struct {
 func podIndex() (int, error) {
 	podName := os.Getenv("HOSTNAME")
 	if podName == "" {
-		return 0, errors.New("HOSTNAME environment variable not set")
+		return 0, fmt.Errorf("HOSTNAME environment variable not set")
 	}
 
 	lastDash := strings.LastIndex(podName, "-")
