@@ -5,7 +5,18 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	"fortio.org/log"
 )
+
+func TestLoggerNotWorking(t *testing.T) {
+	req := SlackPostMessageRequest{}
+
+	err := validate(req)
+
+	log.S(log.Error, "Testing logging", log.Any("err", err))
+	log.S(log.Error, "Testing logging", log.Any("err", err.Error()))
+}
 
 func TestGetSlackTokens(t *testing.T) {
 	tests := []struct {
