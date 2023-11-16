@@ -134,7 +134,7 @@ func validate(request SlackPostMessageRequest) error {
 	}
 
 	if len(errorMessages) > 0 {
-		return fmt.Errorf(strings.Join(errorMessages, " and "))
+		return fmt.Errorf("%s", strings.Join(errorMessages, " and "))
 	}
 
 	return nil
