@@ -9,7 +9,7 @@ import (
 	"fortio.org/log"
 )
 
-func TestLoggerNotWorking(t *testing.T) {
+func TestValidateErrorsAndLogger(t *testing.T) {
 	req := SlackPostMessageRequest{}
 
 	err := validate(req)
