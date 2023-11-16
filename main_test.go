@@ -9,12 +9,21 @@ import (
 	"fortio.org/log"
 )
 
-func TestLoggerNotWorking(_ *testing.T) {
+func TestLoggerNotWorking(t *testing.T) {
 	req := SlackPostMessageRequest{}
 
 	err := validate(req)
-
+	if err == nil {
+		t.Errorf("Expected error on empty request validation, got nil")
+	}
+	// for running go test -v and seeing the log:
 	log.S(log.Error, "Testing logging - err", log.Any("err", err))
+	kv := log.Any("err", err)
+	kvStr := kv.StringValue()
+	expected := `"Channel is not set and Neither attachments, blocks, nor text is set"`
+	if kvStr != expected {
+		t.Errorf("Expected %s, got %s", expected, kvStr)
+	}
 }
 
 func TestGetSlackTokens(t *testing.T) {
