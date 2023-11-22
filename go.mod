@@ -4,17 +4,18 @@ go 1.20
 
 require (
 	fortio.org/assert v1.2.0
-	fortio.org/fortio v1.61.0
-	fortio.org/log v1.12.0-pre3
-	fortio.org/scli v1.12.1
+	fortio.org/fortio v1.62.1
+	fortio.org/log v1.12.0
+	fortio.org/scli v1.13.1
 	github.com/prometheus/client_golang v1.17.0
 	golang.org/x/time v0.4.0
 )
 
 require (
-	fortio.org/cli v1.4.2 // indirect
+	fortio.org/cli v1.5.1 // indirect
 	fortio.org/dflag v1.7.0 // indirect
 	fortio.org/sets v1.0.3 // indirect
+	fortio.org/struct2env v0.4.0 // indirect
 	fortio.org/version v1.0.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
