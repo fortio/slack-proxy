@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	fortio.org/assert v1.2.0
-	fortio.org/fortio v1.62.1
+	fortio.org/fortio v1.63.0
 	fortio.org/log v1.12.0
 	fortio.org/scli v1.13.1
 	github.com/prometheus/client_golang v1.17.0
@@ -25,9 +25,9 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
-	golang.org/x/net v0.18.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
