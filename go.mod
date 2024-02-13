@@ -6,7 +6,7 @@ require (
 	fortio.org/assert v1.2.0
 	fortio.org/fortio v1.63.3
 	fortio.org/log v1.12.0
-	fortio.org/scli v1.13.1
+	fortio.org/scli v1.14.1
 	github.com/prometheus/client_golang v1.18.0
 	golang.org/x/time v0.5.0
 )
