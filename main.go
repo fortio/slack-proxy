@@ -98,11 +98,13 @@ func main() {
 		metricsPort         = ":9090"
 		applicationPort     = ":8080"
 		channelOverride     string
+		slackRequestRateMs  = 1000
 	)
 
 	// Define the flags with the default values // TODO: move the ones that can change to dflag
 	flag.IntVar(&maxRetries, "maxRetries", maxRetries, "Maximum number of retries for posting a message")
 	flag.IntVar(&initialBackoffMs, "initialBackoffMs", initialBackoffMs, "Initial backoff in milliseconds for retries")
+	flag.IntVar(&slackRequestRateMs, "slackRequestRateMs", slackRequestRateMs, "Rate limit for slack requests in milliseconds")
 	flag.StringVar(&slackPostMessageURL, "slackURL", slackPostMessageURL, "Slack Post Message API URL")
 	flag.IntVar(&maxQueueSize, "queueSize", maxQueueSize, "Maximum number of messages in the queue")
 	flag.IntVar(&burst, "burst", burst, "Maximum number of burst to allow")
@@ -156,7 +158,7 @@ func main() {
 	defer serverCancel()
 
 	log.Infof("Starting main app logic")
-	go app.processQueue(ctx, maxRetries, initialBackoffMs, slackPostMessageURL, token, burst)
+	go app.processQueue(ctx, maxRetries, initialBackoffMs, slackPostMessageURL, token, burst, slackRequestRateMs)
 	log.Infof("Starting receiver server")
 	// Check error return of app.StartServer in go routine anon function:
 	go func() {

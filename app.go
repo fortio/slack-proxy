@@ -162,11 +162,11 @@ func (app *App) Shutdown() {
 }
 
 //nolint:gocognit // but could probably use a refactor.
-func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoffMs int, slackPostMessageURL string, tokenFlag string, burst int) {
+func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoffMs int, slackPostMessageURL string, tokenFlag string, burst int, slackRequestRateMs int) {
 	// This is the rate limiter, which will block until it is allowed to continue on r.Wait(ctx).
 	// I kept the rate at 1 per second, as doing more than that will cause Slack to reject the messages anyways. We can burst however.
 	// Do note that this is best effort, in case of failures, we will exponentially backoff and retry, which will cause the rate to be lower than 1 per second due to obvious reasons.
-	r := rate.NewLimiter(rate.Every(1*time.Second), burst)
+	r := rate.NewLimiter(rate.Every(time.Duration(slackRequestRateMs)*time.Millisecond), burst)
 
 	for {
 		select {
