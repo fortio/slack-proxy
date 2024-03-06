@@ -146,12 +146,14 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	return nil
 }
 
-func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics, channelOverride string) *App {
+func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics, channelOverride, slackPostMessageUrl, slackToken string) *App {
 	return &App{
-		slackQueue:      make(chan SlackPostMessageRequest, queueSize),
-		messenger:       &SlackClient{client: httpClient},
-		metrics:         metrics,
-		channelOverride: channelOverride,
+		slackQueue:          make(chan SlackPostMessageRequest, queueSize),
+		messenger:           &SlackClient{client: httpClient},
+		SlackPostMessageURL: slackPostMessageUrl,
+		SlackToken:          slackToken,
+		metrics:             metrics,
+		channelOverride:     channelOverride,
 	}
 }
 
@@ -162,11 +164,12 @@ func (app *App) Shutdown() {
 }
 
 //nolint:gocognit // but could probably use a refactor.
-func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoffMs int, slackPostMessageURL string, tokenFlag string, burst int, slackRequestRateMs int) {
+func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoffMs time.Duration, burst int, slackRequestRateMs time.Duration) {
 	// This is the rate limiter, which will block until it is allowed to continue on r.Wait(ctx).
 	// I kept the rate at 1 per second, as doing more than that will cause Slack to reject the messages anyways. We can burst however.
 	// Do note that this is best effort, in case of failures, we will exponentially backoff and retry, which will cause the rate to be lower than 1 per second due to obvious reasons.
-	r := rate.NewLimiter(rate.Every(time.Duration(slackRequestRateMs)*time.Millisecond), burst)
+	// r := rate.NewLimiter(rate.Every(slackRequestRateMs*time.Millisecond), burst)
+	r := rate.NewLimiter(rate.Every(slackRequestRateMs*time.Millisecond), burst)
 
 	for {
 		select {
@@ -204,7 +207,7 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 					}
 				}
 
-				err := app.messenger.PostMessage(msg, slackPostMessageURL, tokenFlag)
+				err := app.messenger.PostMessage(msg, app.SlackPostMessageURL, app.SlackToken)
 				//nolint:nestif // but simplify by not having else at least.
 				if err != nil {
 					retryable, pause, description := CheckError(err.Error())
@@ -232,7 +235,7 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 
 					if retryCount < maxRetries {
 						retryCount++
-						backoffDuration := time.Duration(initialBackoffMs*int(math.Pow(2, float64(retryCount-1)))) * time.Millisecond
+						backoffDuration := initialBackoffMs * time.Duration(math.Pow(2, float64(retryCount-1))) * time.Millisecond
 						time.Sleep(backoffDuration)
 					} else {
 						log.S(log.Error, "Message failed after retries", log.Any("err", err), log.Int("retryCount", retryCount))

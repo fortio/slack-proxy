@@ -19,6 +19,7 @@ Many applications posting messages to Slack either overlook Slack's rate limits 
 By being a 1:1 forwarding proxy, you simply POST to this application instead, and it will get forwarded to Slack.
 
 Furthermore, by adding observability, we can have a much clearer picture of:
+
 - Requests per second
 - To which channel?
 - Are there failures and at what rate?
@@ -28,7 +29,6 @@ These type of insights are currently not possible to know via Slack, and only vi
 ## Usage
 
 We don't try to 'mock' the Slack API. We make a fair assumption that the message you post to the proxy **is already tested** and meets the API spec. In other words, if you got a new (custom) application where you are testing the API, I would highly recommend you do that to Slack directly. Once you have 'battletested' your implementation, you then simply convert the URL to this proxy and gain out of the box retries and rate limit behaviour with included metrics.
-
 
 ## Features
 
@@ -65,7 +65,6 @@ The `slackproxy` service provides several metrics to monitor and gauge the perfo
    - Metric: `slackproxy_queue_size`
    - Description: The current size of the proxy's queue.
 
-
 ### Queue
 
 Monitor the queue size with the `slackproxy_queue_size` metric. This isn't a persistent queue. If the application crashes abruptly, the queue is lost. However, during a clean application shutdown, the queue processes, given adequate time. If, for instance, there's a prolonged Slack outage or if you face an outage, the queue might be lost. While the queue size is configurable, remember that the processing rate is a maximum of 1 message per second. If the queue consistently reaches its limit, consider horizontal scaling.
@@ -87,10 +86,10 @@ Permanent errors are logged in detail, including the complete POST request. Conc
 - How to run multiple replicas with each their own API key?
 - Add some basic sanity check if the basics are part of the request (channel, some body, etc)
 
-
 ## Slack Application manifest
 
 This manifest is required when making an application that can:
+
 - Use a single token
 - Post to any (public) channel
 - Change it's name
@@ -121,41 +120,45 @@ settings:
 
 ### Required
 
-- `--token` : Bearer token for the Slack API. 
-   - Example: `--token=YOUR_BEARER_TOKEN`
+- `--token` : Bearer token for the Slack API.
+  - Example: `--token=YOUR_BEARER_TOKEN`
 
- ### Optional
+### Optional
 
 > I would recommend not altering these values until you have a good understanding how it performs for your workload
 
 - `--maxRetries` : Maximum number of retries for posting a message.
-   - Default: *`3`*
-   - Example: `--maxRetries=5`
+  - Default: *`3`*
+  - Example: `--maxRetries=5`
 
 - `--initialBackoffMs` : Initial backoff in milliseconds for retries.
-   - Default: *`1000`*
-   - Example: `--initialBackoffMs=2000`
+  - Default: *`1000`*
+  - Example: `--initialBackoffMs=2000`
 
 - `--slackURL` : Slack Post Message API URL.
-   - Default: *`https://slack.com/api/chat.postMessage`*
-   - Example: `--slackURL=https://api.slack.com/your-endpoint`
+  - Default: *`https://slack.com/api/chat.postMessage`*
+  - Example: `--slackURL=https://api.slack.com/your-endpoint`
 
 - `--queueSize` : Maximum number of messages in the queue.
-   - Default: *`100`*
-   - Example: `--queueSize=200`
+  - Default: *`100`*
+  - Example: `--queueSize=200`
 
 - `--burst` : Maximum number of burst messages to allow.
-   - Default: *`3`*
-   - Example: `--burst=2`
+  - Default: *`3`*
+  - Example: `--burst=2`
 
 - `--metricsPort` : Port used for the `/metrics` endpoint
-    - Default: *`:9090`*
-    - Example: `--metricsPort :9090`
+  - Default: *`:9090`*
+  - Example: `--metricsPort :9090`
 
 - `--applicationPort` : Port used for the application endpoint (where you send your requests to)
-    - Default: *`:8080`*
-    - Example: `--applicationPort :8080`    
-   
-- `--channelOverride` : Override on sending _all_ messages to this defined channel. This is useful for debugging or if you want to force to use a single channel
-    - Default: *``*
-    - Example: `--channelOverride #debug-notifications`   
+  - Default: *`:8080`*
+  - Example: `--applicationPort :8080`
+
+- `--channelOverride` : Override on sending *all* messages to this defined channel. This is useful for debugging or if you want to force to use a single channel
+  - Default: *``*
+  - Example: `--channelOverride #debug-notifications`
+
+- `--slackRequestRateMs` : Request rate for slack requests in milliseconds.
+  - Default: *`1000`* (Assuming the default value is 1000ms)
+  - Example: `--slackRequestRateMs=500`
