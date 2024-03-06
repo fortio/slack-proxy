@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"math"
 	"net/http"
 	"time"
@@ -140,7 +140,7 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	}
 
 	if !slackResp.Ok {
-		return fmt.Errorf(slackResp.Error)
+		return errors.New(slackResp.Error)
 	}
 
 	return nil
