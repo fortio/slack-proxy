@@ -146,11 +146,11 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 	return nil
 }
 
-func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics, channelOverride, slackPostMessageUrl, slackToken string) *App {
+func NewApp(queueSize int, httpClient *http.Client, metrics *Metrics, channelOverride, slackPostMessageURL, slackToken string) *App {
 	return &App{
 		slackQueue:          make(chan SlackPostMessageRequest, queueSize),
 		messenger:           &SlackClient{client: httpClient},
-		SlackPostMessageURL: slackPostMessageUrl,
+		SlackPostMessageURL: slackPostMessageURL,
 		SlackToken:          slackToken,
 		metrics:             metrics,
 		channelOverride:     channelOverride,
@@ -164,12 +164,11 @@ func (app *App) Shutdown() {
 }
 
 //nolint:gocognit // but could probably use a refactor.
-func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoffMs time.Duration, burst int, slackRequestRateMs time.Duration) {
+func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff time.Duration, burst int, slackRequestRate time.Duration) {
 	// This is the rate limiter, which will block until it is allowed to continue on r.Wait(ctx).
 	// I kept the rate at 1 per second, as doing more than that will cause Slack to reject the messages anyways. We can burst however.
 	// Do note that this is best effort, in case of failures, we will exponentially backoff and retry, which will cause the rate to be lower than 1 per second due to obvious reasons.
-	// r := rate.NewLimiter(rate.Every(slackRequestRateMs*time.Millisecond), burst)
-	r := rate.NewLimiter(rate.Every(slackRequestRateMs*time.Millisecond), burst)
+	r := rate.NewLimiter(rate.Every(slackRequestRate), burst)
 
 	for {
 		select {
@@ -235,7 +234,7 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 
 					if retryCount < maxRetries {
 						retryCount++
-						backoffDuration := initialBackoffMs * time.Duration(math.Pow(2, float64(retryCount-1))) * time.Millisecond
+						backoffDuration := initialBackoff * time.Duration(math.Pow(2, float64(retryCount-1)))
 						time.Sleep(backoffDuration)
 					} else {
 						log.S(log.Error, "Message failed after retries", log.Any("err", err), log.Int("retryCount", retryCount))
