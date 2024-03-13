@@ -106,7 +106,7 @@ func main() {
 	// Define the flags with the default values // TODO: move the ones that can change to dflag
 	flag.IntVar(&maxRetries, "maxRetries", maxRetries, "Maximum number of retries for posting a message")
 	flag.Duration("initialBackoffMs", initialBackoff, "Initial backoff in milliseconds for retries")
-	flag.Duration("slackRequestRateMs", slackRequestRate, "Rate limit for slack requests in milliseconds")
+	flag.Duration("slackRequestRate", slackRequestRate, "Rate limit for slack requests in milliseconds")
 	flag.StringVar(&slackPostMessageURL, "slackURL", slackPostMessageURL, "Slack Post Message API URL")
 	flag.IntVar(&maxQueueSize, "queueSize", maxQueueSize, "Maximum number of messages in the queue")
 	flag.IntVar(&burst, "burst", burst, "Maximum number of burst to allow")

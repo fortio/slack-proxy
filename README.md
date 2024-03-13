@@ -159,6 +159,6 @@ settings:
   - Default: *``*
   - Example: `--channelOverride #debug-notifications`
 
-- `--slackRequestRateMs` : Request rate for slack requests in milliseconds.
-  - Default: *`1000`* (Assuming the default value is 1000ms)
-  - Example: `--slackRequestRateMs=500`
+- `--slackRequestRate` : Request rate for slack requests in milliseconds.
+  - Default: *`1000`*
+  - Example: `--slackRequestRate=500`
