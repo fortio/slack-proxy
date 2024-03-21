@@ -53,7 +53,8 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	maxQueueSize := int(float64(cap(app.slackQueue)) * 0.9)
 	// Reject requests if the queue is almost full
 	// If the channel is full, the request will block until there is space in the channel.
-	// Ideally we don't reject at 90%, but initially after some tests I got blocked. So I decided to be a bit more conservative.
+	// Ideally we don't reject at 90%, but initially after some tests I got blocked. So I decided to be
+	// a bit more conservative.
 	// ToDo: Fix this behavior so we can reach 100% channel size without problems.
 	if len(app.slackQueue) >= maxQueueSize {
 		log.S(log.Warning, "Queue is almost full, returning StatusServiceUnavailable", log.Int("queueSize", len(app.slackQueue)))
@@ -72,7 +73,8 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	var request SlackPostMessageRequest
 	requestErr := json.NewDecoder(r.Body).Decode(&request)
 
-	// If we can't decode, we don't bother validating. In the end it's the same outcome if either one is invalid.
+	// If we can't decode, we don't bother validating. In the end it's the same outcome if either one
+	// is invalid.
 	if requestErr == nil {
 		requestErr = validate(request)
 	}
@@ -100,16 +102,19 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		request.Channel = app.channelOverride
 	}
 
-	// Add a counter to the wait group, this is important to wait for all the messages to be processed before shutting down the server.
+	// Add a counter to the wait group, this is important to wait for all the messages to be processed
+	// before shutting down the server.
 	app.wg.Add(1)
 	// Send the message to the slackQueue to be processed
 	app.slackQueue <- request
 	// Update the queue size metric after any change on the queue size
 	app.metrics.QueueSize.With(nil).Set(float64(len(app.slackQueue)))
 
-	// Respond, this is not entirely accurate as we have no idea if the message will be processed successfully.
+	// Respond, this is not entirely accurate as we have no idea if the message will be processed
+	// successfully.
 	// This is the downside of having a queue which could potentially delay responses by a lot.
-	// We do our due diligences on the received message and can make a fair assumption we will be able to process it.
+	// We do our due diligences on the received message and can make a fair assumption we will be able
+	// to process it.
 	// Application should utlise this applications metrics and logs to find out if there are any issues.
 	err := jrpc.Reply[SlackResponse](w, http.StatusOK, &SlackResponse{
 		Ok: true,

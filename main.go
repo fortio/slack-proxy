@@ -120,7 +120,8 @@ func main() {
 	tokens := getSlackTokens()
 
 	// Hack to get the pod index
-	// Todo: Remove this by using the label pod-index: https://github.com/kubernetes/kubernetes/pull/119232
+	// Todo: Remove this by using the label pod-index:
+	// https://github.com/kubernetes/kubernetes/pull/119232
 	podName := os.Getenv("HOSTNAME")
 	if podName == "" {
 		log.Fatalf("HOSTNAME environment variable not set")
