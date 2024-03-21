@@ -98,8 +98,7 @@ func TestStartServer(t *testing.T) {
 	}()
 
 	// Give server some time to start
-	// If you are running on a non-priviledged account, and get a popup asking for permission to accept incoming
-	// connections, you can increase this time...
+	// If you are running on a non-priviledged account, and get a popup asking for permission to accept incoming connections, you can increase this time...
 	time.Sleep(1 * time.Second)
 
 	// Make a sample request to ensure server is running
@@ -125,8 +124,7 @@ func TestStartServer(t *testing.T) {
 		t.Fatal("Expected error making POST request after server shut down, got none")
 	}
 
-	// to avoid confusion; we _are_ expecting a err, but for the edge-case it doesn't (resp != nil), we should close the
-	// body.
+	// to avoid confusion; we _are_ expecting a err, but for the edge-case it doesn't (resp != nil), we should close the body.
 	if secondResp != nil {
 		defer secondResp.Body.Close()
 	}

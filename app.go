@@ -92,8 +92,7 @@ var doNotProcessChannels = map[string]time.Time{}
 
 func CheckError(err string) (retryable bool, pause bool, description string) {
 	// Special case for channel_not_found, we don't want to retry this one right away.
-	// We are making it a 'soft failure' so that we don't keep retrying it for a period of time for any message that is
-	// sent to a channel that doesn't exist.
+	// We are making it a 'soft failure' so that we don't keep retrying it for a period of time for any message that is sent to a channel that doesn't exist.
 	if err == "channel_not_found" {
 		return true, true, "Channel not found"
 	}
@@ -125,8 +124,7 @@ func (s *SlackClient) PostMessage(request SlackPostMessageRequest, url string, t
 
 	// Charset is required to remove warnings from Slack. Maybe it's nice to have it configurable. /shrug
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	// Documentation says that you are allowed the POST the token instead, however that does simply not work. Hence why we
-	// are using the Authorization header.
+	// Documentation says that you are allowed the POST the token instead, however that does simply not work. Hence why we are using the Authorization header.
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := s.client.Do(req)
@@ -168,27 +166,22 @@ func (app *App) Shutdown() {
 //nolint:gocognit // but could probably use a refactor.
 func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff time.Duration, burst int, slackRequestRate time.Duration) {
 	// This is the rate limiter, which will block until it is allowed to continue on r.Wait(ctx).
-	// I kept the rate at 1 per second, as doing more than that will cause Slack to reject the messages anyways. We can
-	// burst however.
-	// Do note that this is best effort, in case of failures, we will exponentially backoff and retry, which will cause the
-	// rate to be lower than 1 per second due to obvious reasons.
+	// I kept the rate at 1 per second, as doing more than that will cause Slack to reject the messages anyways. We can burst however.
+	// Do note that this is best effort, in case of failures, we will exponentially backoff and retry, which will cause the rate to be lower than 1 per second due to obvious reasons.
 	r := rate.NewLimiter(rate.Every(slackRequestRate), burst)
 
 	for {
 		select {
 		case msg, ok := <-app.slackQueue:
-			// We do check if the channel is closed, but its important to note is that the channel will be closed when the queue is
-			// empty and the Shutdown() is called.
-			// Simply calling close(app.slackQueue) will not close the channel, it will only prevent any more messages from being
-			// sent to the channel.
+			// We do check if the channel is closed, but its important to note is that the channel will be closed when the queue is empty and the Shutdown() is called.
+			// Simply calling close(app.slackQueue) will not close the channel, it will only prevent any more messages from being sent to the channel.
 			// Only once the channel is empty, will it be closed.
 			if !ok {
 				return
 			}
 			log.S(log.Debug, "Got message from queue", log.Any("message", msg))
 
-			// Rate limiter was initially before fetching a message from the queue, but that caused problems by indefinitely
-			// looping even if there was no message in the queue.
+			// Rate limiter was initially before fetching a message from the queue, but that caused problems by indefinitely looping even if there was no message in the queue.
 			// On shutdown, it would cancel the context, even if the queue was stopped (thus no messages would even come in).
 			err := r.Wait(ctx)
 			if err != nil {
@@ -201,12 +194,10 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 
 			retryCount := 0
 			for {
-				// Check if the channel is in the doNotProcessChannels map, if it is, check if it's been more than 15 minutes since we
-				// last tried to send a message to it.
+				// Check if the channel is in the doNotProcessChannels map, if it is, check if it's been more than 15 minutes since we last tried to send a message to it.
 				if (doNotProcessChannels[msg.Channel] != time.Time{}) {
 					if time.Since(doNotProcessChannels[msg.Channel]) >= 15*time.Minute {
-						// Remove the channel from the map, so that we can process it again. If the channel isn't created in the meantime, we
-						// will just add it again.
+						// Remove the channel from the map, so that we can process it again. If the channel isn't created in the meantime, we will just add it again.
 						delete(doNotProcessChannels, msg.Channel)
 					} else {
 						log.S(log.Info, "Channel is on the doNotProcess list, not trying to post this message", log.String("channel", msg.Channel))
@@ -257,8 +248,7 @@ func (app *App) processQueue(ctx context.Context, maxRetries int, initialBackoff
 				}
 			}
 
-			// Need to call this to clean up the wg, which is vital for the shutdown to work (so that we process all the messages
-			// in the queue before exiting cleanly)
+			// Need to call this to clean up the wg, which is vital for the shutdown to work (so that we process all the messages in the queue before exiting cleanly)
 			app.wg.Done()
 
 		case <-ctx.Done():

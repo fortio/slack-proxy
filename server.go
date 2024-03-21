@@ -53,8 +53,7 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	maxQueueSize := int(float64(cap(app.slackQueue)) * 0.9)
 	// Reject requests if the queue is almost full
 	// If the channel is full, the request will block until there is space in the channel.
-	// Ideally we don't reject at 90%, but initially after some tests I got blocked. So I decided to be a bit more
-	// conservative.
+	// Ideally we don't reject at 90%, but initially after some tests I got blocked. So I decided to be a bit more conservative.
 	// ToDo: Fix this behavior so we can reach 100% channel size without problems.
 	if len(app.slackQueue) >= maxQueueSize {
 		log.S(log.Warning, "Queue is almost full, returning StatusServiceUnavailable", log.Int("queueSize", len(app.slackQueue)))
@@ -101,8 +100,7 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 		request.Channel = app.channelOverride
 	}
 
-	// Add a counter to the wait group, this is important to wait for all the messages to be processed before shutting down
-	// the server.
+	// Add a counter to the wait group, this is important to wait for all the messages to be processed before shutting down the server.
 	app.wg.Add(1)
 	// Send the message to the slackQueue to be processed
 	app.slackQueue <- request
