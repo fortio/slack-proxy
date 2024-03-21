@@ -147,7 +147,8 @@ func TestApp_TestSlackRequestRate(t *testing.T) {
 	diffInSeconds := endTime.Sub(startTime).Seconds()
 	log.S(log.Debug, "diffInSeconds", log.Float64("diffInSeconds", diffInSeconds))
 
-	// The sum is always: (Amount of messages * RPS * delay in seconds) minus burst. In this case 20 * 4 * 1 - 10 = 5 seconds.
+	// The sum is always: (Amount of messages * RPS * delay in seconds) minus burst. In this case 20 * 4 * 1 - 10 = 5
+	// seconds.
 	if math.RoundToEven(diffInSeconds) != 5 {
 		t.Fatal("Expected processQueue finish the job in ~5 seconds, give or take. Got", diffInSeconds)
 	}
