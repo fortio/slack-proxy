@@ -93,20 +93,19 @@ func getSlackTokens() []string {
 func main() {
 	var (
 		maxRetries          = 2
-		initialBackoff      = 1000 * time.Millisecond
 		slackPostMessageURL = "https://slack.com/api/chat.postMessage"
 		maxQueueSize        = 100
 		burst               = 3
 		metricsPort         = ":9090"
 		applicationPort     = ":8080"
 		channelOverride     string
-		slackRequestRate    = 1000 * time.Millisecond
 	)
+
+	initialBackoff := flag.Duration("initialBackoff", 1000*time.Millisecond, "Initial backoff in milliseconds for retries")
+	slackRequestRate := flag.Duration("slackRequestRate", 1000*time.Millisecond, "Rate limit for slack requests in milliseconds")
 
 	// Define the flags with the default values // TODO: move the ones that can change to dflag
 	flag.IntVar(&maxRetries, "maxRetries", maxRetries, "Maximum number of retries for posting a message")
-	flag.Duration("initialBackoffMs", initialBackoff, "Initial backoff in milliseconds for retries")
-	flag.Duration("slackRequestRate", slackRequestRate, "Rate limit for slack requests in milliseconds")
 	flag.StringVar(&slackPostMessageURL, "slackURL", slackPostMessageURL, "Slack Post Message API URL")
 	flag.IntVar(&maxQueueSize, "queueSize", maxQueueSize, "Maximum number of messages in the queue")
 	flag.IntVar(&burst, "burst", burst, "Maximum number of burst to allow")
@@ -161,7 +160,7 @@ func main() {
 	defer serverCancel()
 
 	log.Infof("Starting main app logic")
-	go app.processQueue(ctx, maxRetries, initialBackoff, burst, slackRequestRate)
+	go app.processQueue(ctx, maxRetries, *initialBackoff, burst, *slackRequestRate)
 	log.Infof("Starting receiver server")
 	// Check error return of app.StartServer in go routine anon function:
 	go func() {
