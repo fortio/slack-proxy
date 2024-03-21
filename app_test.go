@@ -40,7 +40,7 @@ func TestApp_singleBurst_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	go app.processQueue(ctx, 3, 1000, 1, 1000)
+	go app.processQueue(ctx, 3, 1000*time.Millisecond, 1, 1000*time.Millisecond)
 
 	startTime := time.Now()
 
@@ -83,7 +83,7 @@ func TestApp_MultiBurst_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	go app.processQueue(ctx, 3, 1000, 10, 1000)
+	go app.processQueue(ctx, 3, 1000*time.Millisecond, 10, 1000*time.Millisecond)
 
 	startTime := time.Now()
 
@@ -126,7 +126,7 @@ func TestApp_TestSlackRequestRate(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	go app.processQueue(ctx, 3, 1000, 1, 250)
+	go app.processQueue(ctx, 3, 1000*time.Millisecond, 1, 250*time.Millisecond)
 
 	startTime := time.Now()
 
