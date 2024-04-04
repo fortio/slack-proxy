@@ -5,7 +5,7 @@ go 1.21
 require (
 	fortio.org/assert v1.2.1
 	fortio.org/fortio v1.63.5
-	fortio.org/log v1.12.1
+	fortio.org/log v1.12.2
 	fortio.org/scli v1.14.2
 	github.com/prometheus/client_golang v1.19.0
 	golang.org/x/time v0.5.0
