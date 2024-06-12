@@ -45,7 +45,7 @@ func TestApp_singleBurst_Success(t *testing.T) {
 	startTime := time.Now()
 
 	count := 10
-	for i := 0; i < count; i++ {
+	for range count {
 		app.wg.Add(1)
 		app.slackQueue <- SlackPostMessageRequest{
 			Channel: "mockChannel",
@@ -89,7 +89,7 @@ func TestApp_MultiBurst_Success(t *testing.T) {
 	startTime := time.Now()
 
 	count := 20
-	for i := 0; i < count; i++ {
+	for range count {
 		app.wg.Add(1)
 		app.slackQueue <- SlackPostMessageRequest{
 			Channel: "mockChannel",
@@ -133,7 +133,7 @@ func TestApp_TestSlackRequestRate(t *testing.T) {
 	startTime := time.Now()
 
 	count := 20
-	for i := 0; i < count; i++ {
+	for range count {
 		app.wg.Add(1)
 		app.slackQueue <- SlackPostMessageRequest{
 			Channel: "mockChannel",
