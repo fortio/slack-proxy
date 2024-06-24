@@ -6,13 +6,13 @@ require (
 	fortio.org/assert v1.2.1
 	fortio.org/fortio v1.63.10
 	fortio.org/log v1.12.2
-	fortio.org/scli v1.14.3
+	fortio.org/scli v1.15.0
 	github.com/prometheus/client_golang v1.19.1
 	golang.org/x/time v0.5.0
 )
 
 require (
-	fortio.org/cli v1.5.2 // indirect
+	fortio.org/cli v1.6.0 // indirect
 	fortio.org/dflag v1.7.2 // indirect
 	fortio.org/sets v1.1.1 // indirect
 	fortio.org/struct2env v0.4.0 // indirect
@@ -24,6 +24,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20240604170348-d4e7c9cb6cb8 // indirect
 	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
