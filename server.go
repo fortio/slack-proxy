@@ -115,7 +115,7 @@ func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
 	// This is the downside of having a queue which could potentially delay responses by a lot.
 	// We do our due diligences on the received message and can make a fair assumption we will be able
 	// to process it.
-	// Application should utlise this applications metrics and logs to find out if there are any issues.
+	// Application should utilize this applications metrics and logs to find out if there are any issues.
 	err := jrpc.Reply[SlackResponse](w, http.StatusOK, &SlackResponse{
 		Ok: true,
 	})
