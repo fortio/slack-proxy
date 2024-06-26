@@ -4,7 +4,7 @@ This tool serves as a proxy for applications aiming to dispatch messages to Slac
 
 ## Use-case
 
-For those managing multiple applications, a practical approach is to create a separate Slack app or webhook for each application. That method is prefered. **However**, if you are operating a singular system, like Alertmanager or Grafana, and wish to avoid the complexities of providing individual teams with:
+For those managing multiple applications, a practical approach is to create a separate Slack app or webhook for each application. That method is preferred. **However**, if you are operating a singular system, like Alertmanager or Grafana, and wish to avoid the complexities of providing individual teams with:
 
 - Their distinct webhooks
 - Unique notification channel keys
