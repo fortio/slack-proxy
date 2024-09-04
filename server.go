@@ -18,6 +18,7 @@ func (app *App) StartServer(ctx context.Context, applicationPort string) error {
 	name := "tbd" // TODO: Add a name field to "App"
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleRequest)
+	mux.HandleFunc("/health", HealthCheck)
 
 	server := &http.Server{
 		Addr:              applicationPort,
@@ -42,6 +43,10 @@ func (app *App) StartServer(ctx context.Context, applicationPort string) error {
 	case err := <-doneCh:
 		return err
 	}
+}
+
+func HealthCheck(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (app *App) handleRequest(w http.ResponseWriter, r *http.Request) {
