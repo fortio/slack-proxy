@@ -7,7 +7,7 @@ require (
 	fortio.org/fortio v1.67.1
 	fortio.org/log v1.17.1
 	fortio.org/scli v1.15.3
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	golang.org/x/time v0.7.0
 )
 
