@@ -1,6 +1,7 @@
 module fortio.org/slack-proxy
 
-go 1.22.4
+go 1.23.3
+
 require (
 	fortio.org/assert v1.2.1
 	fortio.org/fortio v1.68.0
