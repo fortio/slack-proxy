@@ -1,10 +1,10 @@
 module fortio.org/slack-proxy
 
-go 1.22.4
+go 1.23.3
 
 require (
 	fortio.org/assert v1.2.1
-	fortio.org/fortio v1.67.1
+	fortio.org/fortio v1.68.0
 	fortio.org/log v1.17.1
 	fortio.org/scli v1.15.3
 	github.com/prometheus/client_golang v1.20.5
@@ -30,8 +30,8 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20240904212608-c9da6b9a4008 // indirect
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e // indirect
-	golang.org/x/net v0.29.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
