@@ -4,7 +4,7 @@ go 1.23.8
 
 require (
 	fortio.org/assert v1.2.1
-	fortio.org/fortio v1.69.3
+	fortio.org/fortio v1.69.4
 	fortio.org/log v1.17.2
 	fortio.org/scli v1.16.1
 	github.com/prometheus/client_golang v1.20.5
@@ -32,5 +32,5 @@ require (
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/protobuf v1.36.4 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 )
