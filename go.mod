@@ -4,7 +4,7 @@ go 1.23.8
 
 require (
 	fortio.org/assert v1.2.1
-	fortio.org/fortio v1.71.1
+	fortio.org/fortio v1.71.2
 	fortio.org/log v1.17.2
 	fortio.org/scli v1.16.1
 	github.com/prometheus/client_golang v1.23.0
@@ -14,7 +14,7 @@ require (
 require (
 	fortio.org/cli v1.10.0 // indirect
 	fortio.org/dflag v1.8.1 // indirect
-	fortio.org/safecast v1.0.0 // indirect
+	fortio.org/safecast v1.2.0 // indirect
 	fortio.org/sets v1.3.0 // indirect
 	fortio.org/struct2env v0.4.2 // indirect
 	fortio.org/version v1.0.4 // indirect
