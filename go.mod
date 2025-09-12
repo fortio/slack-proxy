@@ -4,16 +4,17 @@ go 1.23.8
 
 require (
 	fortio.org/assert v1.2.1
-	fortio.org/fortio v1.71.2
+	fortio.org/fortio v1.72.0
 	fortio.org/log v1.17.2
-	fortio.org/scli v1.16.1
+	fortio.org/scli v1.17.1
 	github.com/prometheus/client_golang v1.23.2
 	golang.org/x/time v0.12.0
 )
 
 require (
-	fortio.org/cli v1.10.0 // indirect
-	fortio.org/dflag v1.8.1 // indirect
+	fortio.org/cli v1.11.0 // indirect
+	fortio.org/dflag v1.9.2 // indirect
+	fortio.org/duration v1.0.4 // indirect
 	fortio.org/safecast v1.2.0 // indirect
 	fortio.org/sets v1.3.0 // indirect
 	fortio.org/struct2env v0.4.2 // indirect
