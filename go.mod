@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	fortio.org/assert v1.2.1
 	fortio.org/fortio v1.73.0
-	fortio.org/log v1.18.1
+	fortio.org/log v1.18.3
 	fortio.org/scli v1.18.1
 	github.com/prometheus/client_golang v1.23.2
 	golang.org/x/time v0.14.0
