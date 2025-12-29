@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	fortio.org/assert v1.2.1
-	fortio.org/fortio v1.73.0
+	fortio.org/fortio v1.73.1
 	fortio.org/log v1.18.3
 	fortio.org/scli v1.19.0
 	github.com/prometheus/client_golang v1.23.2
@@ -31,8 +31,8 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20250406160420-959f8f3db0fb // indirect
-	golang.org/x/net v0.46.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
+	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 )
